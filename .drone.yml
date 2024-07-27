@@ -1,0 +1,22 @@
+kind: pipeline
+type: docker
+name: default
+
+steps:
+  - name: Build and Deploy
+    image: docker:latest
+    privileged: true
+    volumes:
+      - name: docker sock
+        path: /var/run/docker.sock
+    commands:
+      - docker build -t tracker .
+      - docker rm -f tracker || true
+      - docker run -d --name tracker -p 9899:80 --restart unless-stopped tracker
+#    tags:
+#      - latest
+
+volumes:
+  - name: docker sock
+    host:
+      path: /var/run/docker.sock

@@ -7,7 +7,8 @@ services:
       - "9899:80"
     volumes:
       - ./src:/var/www/html
-      - db:/app-db
+      - ./scripts:/var/www/scripts
+      - data:/var/tracker/data
 
 volumes:
-  db: {}
+  data: {}

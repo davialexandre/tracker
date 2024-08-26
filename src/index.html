@@ -29,18 +29,41 @@
         maxZoom: 20
     });
 
+    var SpeedControl = L.Control.extend({
+        onAdd: function() {
+            var container = L.DomUtil.create('input');
+            container.type = 'number';
+            container.min = 0;
+            container.onchange = function() {
+                fetchLocations(container.value);
+            };
+
+            return container;
+        }
+    });
+
+    (new SpeedControl()).addTo(map);
     CartoDB_Positron.addTo(map);
 
-    fetch('/locations.php')
-        .then((response) => {
-            response.json().then((json) => {
-                L.geoJSON(json, {
-                    style: function(feature) {
-                        return {'color': feature.properties.color, weight: 2}
-                    }
-                }).addTo(map)
-            });
+    function fetchLocations(speed) {
+        map.eachLayer(function (layer) {
+            if (layer instanceof L.GeoJSON) {
+                map.removeLayer(layer);
+            }
         });
-</script>
+        fetch('/locations.php?speed=' + speed)
+            .then((response) => {
+                response.json().then((json) => {
+                    L.geoJSON(json, {
+                        style: function (feature) {
+                            return { 'color': feature.properties.color, weight: 2 }
+                        }
+                    }).addTo(map)
+                });
+            });
+    }
+
+    fetchLocations(8.5);
+    </script>
 </body>
 </html>

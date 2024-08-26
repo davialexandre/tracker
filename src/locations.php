@@ -34,10 +34,11 @@ $featurePositions = [];
 $color = '#006cff';
 $previousPosition = $positions[0];
 $haversine = new Haversine();
+$maxSpeed = $_GET['speed'] ?? 8.5;
 foreach ($positions as $position) {
     $distance = $haversine->getDistance($previousPosition['coordinate'], $position['coordinate']);
 
-    if ($distance <= 3.5 || $position['vel'] >= 8.5) {
+    if ($distance <= 3.5 || $position['vel'] >= $maxSpeed) {
         continue;
     }
 

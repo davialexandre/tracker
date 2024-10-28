@@ -22,7 +22,7 @@
 <body>
 <div id="map"></div>
 <script type="application/javascript" async="async">
-    var map = L.map('map').setView([-23.54574186833512, -46.608589765419296], 14);
+    var map = L.map('map', {zoomSnap: 0.25}).setView([-23.54574186833512, -46.608589765419296], 14);
     var CartoDB_Positron = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
         subdomains: 'abcd',

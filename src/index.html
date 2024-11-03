@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+            crossorigin=""></script>
+
+    <style>
+        html, body {
+            margin: 0;
+        }
+        #map {
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+<div id="map"></div>
+<script type="application/javascript" async="async">
+    var map = L.map('map', {zoomSnap: 0.25}).setView([-23.550351083875988, -46.63347076987529], 14);
+    var CartoDB_Positron = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 20
+    });
+
+    var SpeedControl = L.Control.extend({
+        onAdd: function() {
+            var container = L.DomUtil.create('input');
+            container.type = 'number';
+            container.min = 0;
+            container.onchange = function() {
+                fetchLocations(container.value);
+            };
+
+            return container;
+        }
+    });
+
+    (new SpeedControl()).addTo(map);
+    CartoDB_Positron.addTo(map);
+
+    function fetchLocations(speed) {
+        map.eachLayer(function (layer) {
+            if (layer instanceof L.GeoJSON) {
+                map.removeLayer(layer);
+            }
+        });
+        fetch('/locations.php?speed=' + speed)
+            .then((response) => {
+                response.json().then((json) => {
+                    L.geoJSON(json, {
+                        style: function (feature) {
+                            return { 'color': feature.properties.color, weight: 2 }
+                        }
+                    }).addTo(map)
+                });
+            });
+    }
+
+    fetchLocations(8.5);
+    </script>
+</body>
+</html>

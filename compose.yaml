@@ -1,0 +1,14 @@
+name: tracker
+
+services:
+  php:
+    build: .
+    ports:
+      - "9899:80"
+    volumes:
+      - ./src:/var/www/html
+      - ./scripts:/var/www/scripts
+      - data:/var/tracker/data
+
+volumes:
+  data: {}

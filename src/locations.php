@@ -17,11 +17,11 @@ $pdo = new PDO(getenv('DB_DSN'));
 $limit = (int)($_GET['limit'] ?? 50000);
 $offset = (int)($_GET['offset'] ?? 0);
 
-$stmt = $pdo->prepare('SELECT * FROM location ORDER BY tst ASC LIMIT ? OFFSET ?');
+$stmt = $pdo->prepare('SELECT * FROM location ORDER BY tst DESC LIMIT ? OFFSET ?');
 $stmt->execute([$limit, $offset]);
 
 $hasMoreData = false;
-$checkStmt = $pdo->prepare('SELECT COUNT(*) FROM location WHERE id > (SELECT id FROM location ORDER BY tst ASC LIMIT 1 OFFSET ?)');
+$checkStmt = $pdo->prepare('SELECT COUNT(*) FROM location WHERE id < (SELECT id FROM location ORDER BY tst DESC LIMIT 1 OFFSET ?)');
 $checkStmt->execute([$offset + $limit - 1]);
 $hasMoreData = $checkStmt->fetchColumn() > 0;
 

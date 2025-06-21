@@ -51,16 +51,32 @@
                 map.removeLayer(layer);
             }
         });
-        fetch('/locations.php?speed=' + speed)
-            .then((response) => {
-                response.json().then((json) => {
-                    L.geoJSON(json, {
-                        style: function (feature) {
-                            return { 'color': feature.properties.color, weight: 2 }
+        
+        let offset = 0;
+        const chunkSize = 50000;
+        
+        function loadChunk() {
+            fetch(`/locations.php?speed=${speed}&limit=${chunkSize}&offset=${offset}`)
+                .then((response) => {
+                    response.json().then((json) => {
+                        if (json.features && json.features.length > 0) {
+                            L.geoJSON(json, {
+                                style: function (feature) {
+                                    return { 'color': feature.properties.color, weight: 2 }
+                                }
+                            }).addTo(map);
                         }
-                    }).addTo(map)
+                        
+                        // Load next chunk if there's more data
+                        if (json.hasMore) {
+                            offset += chunkSize;
+                            setTimeout(loadChunk, 100); // Small delay to prevent overwhelming
+                        }
+                    });
                 });
-            });
+        }
+        
+        loadChunk();
     }
 
     fetchLocations(8.5);

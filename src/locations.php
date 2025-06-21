@@ -13,7 +13,17 @@ ini_set('memory_limit', '-1');
 header("Content-type: application/json");
 
 $pdo = new PDO(getenv('DB_DSN'));
-$stmt = $pdo->query('SELECT * FROM location Order By tst ASC');
+
+$limit = (int)($_GET['limit'] ?? 50000);
+$offset = (int)($_GET['offset'] ?? 0);
+
+$stmt = $pdo->prepare('SELECT * FROM location ORDER BY tst ASC LIMIT ? OFFSET ?');
+$stmt->execute([$limit, $offset]);
+
+$hasMoreData = false;
+$checkStmt = $pdo->prepare('SELECT COUNT(*) FROM location WHERE id > (SELECT id FROM location ORDER BY tst ASC LIMIT 1 OFFSET ?)');
+$checkStmt->execute([$offset + $limit - 1]);
+$hasMoreData = $checkStmt->fetchColumn() > 0;
 
 $positions = [];
 while ($location = $stmt->fetch(PDO::FETCH_ASSOC)) {
@@ -64,4 +74,9 @@ if (count($featurePositions) > 1) {
 }
 
 $featureCollection = new FeatureCollection($features);
-echo json_encode($featureCollection);
+$response = [
+    'type' => 'FeatureCollection',
+    'features' => $featureCollection->getFeatures(),
+    'hasMore' => $hasMoreData
+];
+echo json_encode($response);

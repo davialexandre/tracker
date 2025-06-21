@@ -18,3 +18,5 @@ create table if not exists location
     received_at integer
 );
 SQL);
+
+$pdo->exec('CREATE INDEX IF NOT EXISTS idx_location_tst ON location(tst);');

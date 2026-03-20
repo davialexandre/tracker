@@ -1,5 +1,8 @@
 <?php
 
+if (!ob_start('ob_gzhandler')) {
+    ob_start();
+}
 header("Content-type: application/json");
 
 $pdo = new PDO(getenv('DB_DSN'));

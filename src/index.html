@@ -17,11 +17,25 @@
         #map {
             height: 100vh;
         }
+        #loading {
+            display: none;
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            z-index: 1000;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+            font-family: sans-serif;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
 <div id="map"></div>
-<script type="application/javascript" async="async">
+<div id="loading">Loading...</div>
+<script type="application/javascript">
     var map = L.map('map', {zoomSnap: 0.25, preferCanvas: true}).setView([-23.54574186833512, -46.608589765419296], 14);
     var CartoDB_Positron = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
@@ -29,15 +43,24 @@
         maxZoom: 20
     });
 
+    var currentSpeed = 8.5;
+    var currentLayer = null;
+    var abortController = null;
+    var moveTimeout = null;
+    var loadingEl = document.getElementById('loading');
+
     var SpeedControl = L.Control.extend({
         onAdd: function() {
             var container = L.DomUtil.create('input');
             container.type = 'number';
             container.min = 0;
+            container.step = 0.5;
+            container.value = currentSpeed;
             container.onchange = function() {
-                fetchLocations(container.value);
+                currentSpeed = parseFloat(container.value) || 8.5;
+                fetchLocations();
             };
-
+            L.DomEvent.disableClickPropagation(container);
             return container;
         }
     });
@@ -45,41 +68,51 @@
     (new SpeedControl()).addTo(map);
     CartoDB_Positron.addTo(map);
 
-    function fetchLocations(speed) {
-        map.eachLayer(function (layer) {
-            if (layer instanceof L.GeoJSON) {
-                map.removeLayer(layer);
-            }
-        });
-        
-        let offset = 0;
-        const chunkSize = 50000;
-        
-        function loadChunk() {
-            fetch(`/locations.php?speed=${speed}&limit=${chunkSize}&offset=${offset}`)
-                .then((response) => {
-                    response.json().then((json) => {
-                        if (json.features && json.features.length > 0) {
-                            L.geoJSON(json, {
-                                style: function (feature) {
-                                    return { 'color': feature.properties.color, weight: 2 }
-                                }
-                            }).addTo(map);
-                        }
-                        
-                        // Load next chunk if there's more data
-                        if (json.hasMore) {
-                            offset += chunkSize;
-                            setTimeout(loadChunk, 100); // Small delay to prevent overwhelming
-                        }
-                    });
-                });
+    function fetchLocations() {
+        if (abortController) abortController.abort();
+        abortController = new AbortController();
+
+        if (currentLayer) {
+            map.removeLayer(currentLayer);
+            currentLayer = null;
         }
-        
-        loadChunk();
+
+        var bounds = map.getBounds();
+        var params = new URLSearchParams({
+            speed: currentSpeed,
+            south: bounds.getSouth(),
+            north: bounds.getNorth(),
+            west: bounds.getWest(),
+            east: bounds.getEast(),
+            limit: 100000
+        });
+
+        loadingEl.style.display = 'block';
+
+        fetch('/locations.php?' + params.toString(), { signal: abortController.signal })
+            .then(function(response) { return response.json(); })
+            .then(function(json) {
+                loadingEl.style.display = 'none';
+                if (json.features && json.features.length > 0) {
+                    currentLayer = L.geoJSON(json, {
+                        style: function(feature) {
+                            return { color: feature.properties.color, weight: 2 };
+                        }
+                    }).addTo(map);
+                }
+            })
+            .catch(function(e) {
+                loadingEl.style.display = 'none';
+                if (e.name !== 'AbortError') console.error(e);
+            });
     }
 
-    fetchLocations(8.5);
-    </script>
+    map.on('moveend', function() {
+        clearTimeout(moveTimeout);
+        moveTimeout = setTimeout(fetchLocations, 300);
+    });
+
+    fetchLocations();
+</script>
 </body>
 </html>

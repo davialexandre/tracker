@@ -15,4 +15,5 @@ RUN apt-get update && \
     mkdir -p /var/tracker/data && \
     chown www-data:www-data /var/tracker/data && \
     composer install -d /var/www --no-scripts --no-dev && \
-    composer dump-autoload -d /var/www --optimize
+    composer dump-autoload -d /var/www --optimize && \
+    echo 'AddOutputFilterByType DEFLATE application/json' >> /etc/apache2/mods-enabled/deflate.conf

@@ -1,82 +1,117 @@
 <?php
 
-require_once '../vendor/autoload.php';
-
-use GeoJson\Feature\Feature;
-use GeoJson\Feature\FeatureCollection;
-use GeoJson\Geometry\LineString;
-use GeoJson\Geometry\Point;
-use Location\Coordinate;
-use Location\Distance\Haversine;
-
-ini_set('memory_limit', '-1');
 header("Content-type: application/json");
 
 $pdo = new PDO(getenv('DB_DSN'));
 
-$limit = (int)($_GET['limit'] ?? 50000);
-$offset = (int)($_GET['offset'] ?? 0);
+$maxSpeed = (float)($_GET['speed'] ?? 8.5);
+$limit = (int)($_GET['limit'] ?? 100000);
+$cursor = isset($_GET['cursor']) ? (int)$_GET['cursor'] : PHP_INT_MAX;
 
-$stmt = $pdo->prepare('SELECT * FROM location ORDER BY tst DESC LIMIT ? OFFSET ?');
-$stmt->execute([$limit, $offset]);
+$hasBounds = isset($_GET['south'], $_GET['north'], $_GET['west'], $_GET['east']);
 
-$hasMoreData = false;
-$checkStmt = $pdo->prepare('SELECT COUNT(*) FROM location WHERE id < (SELECT id FROM location ORDER BY tst DESC LIMIT 1 OFFSET ?)');
-$checkStmt->execute([$offset + $limit - 1]);
-$hasMoreData = $checkStmt->fetchColumn() > 0;
+$params = [':maxSpeed' => $maxSpeed, ':cursor' => $cursor, ':limit' => $limit + 1];
+$boundsClause = '';
 
-$positions = [];
-while ($location = $stmt->fetch(PDO::FETCH_ASSOC)) {
-    $positions[] = [
-      'tst' => $location['tst'],
-      'coordinate' => new Coordinate($location['lat'], $location['lon']),
-      'vel' => $location['vel']
-    ];
+if ($hasBounds) {
+    $south = (float)$_GET['south'];
+    $north = (float)$_GET['north'];
+    $west = (float)$_GET['west'];
+    $east = (float)$_GET['east'];
+
+    // Expand bounds by 10% to reduce line cut-off artifacts at edges
+    $latMargin = ($north - $south) * 0.1;
+    $lonMargin = ($east - $west) * 0.1;
+
+    $params[':south'] = $south - $latMargin;
+    $params[':north'] = $north + $latMargin;
+    $params[':west'] = $west - $lonMargin;
+    $params[':east'] = $east + $lonMargin;
+
+    $boundsClause = 'AND lat BETWEEN :south AND :north AND lon BETWEEN :west AND :east';
 }
 
-if (empty($positions)) {
-    echo json_encode([]);
+$sql = "SELECT lat, lon, tst FROM location
+        WHERE vel >= 0 AND vel < :maxSpeed
+        AND tst < :cursor
+        $boundsClause
+        ORDER BY tst DESC
+        LIMIT :limit";
+
+$stmt = $pdo->prepare($sql);
+$stmt->execute($params);
+$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$hasMore = count($rows) > $limit;
+if ($hasMore) {
+    array_pop($rows);
+}
+
+if (empty($rows)) {
+    echo json_encode(['type' => 'FeatureCollection', 'features' => [], 'hasMore' => false]);
     exit();
 }
 
-$features = [];
-$featurePositions = [];
-$color = '#006cff';
-$previousPosition = $positions[0];
-$haversine = new Haversine();
-$maxSpeed = $_GET['speed'] ?? 8.5;
-foreach ($positions as $position) {
-    $distance = $haversine->getDistance($previousPosition['coordinate'], $position['coordinate']);
+// Equirectangular distance approximation (submillimeter accuracy at these scales)
+$centerLat = $hasBounds ? deg2rad(($south + $north) / 2) : deg2rad($rows[0]['lat']);
+$cosLat = cos($centerLat);
+$metersPerDeg = 111320.0;
+$noiseThreshold2 = (3.5 / $metersPerDeg) ** 2;
+$gapThreshold2 = (250.0 / $metersPerDeg) ** 2;
 
-    if ($distance <= 3.5 || $position['vel'] >= $maxSpeed) {
+$features = [];
+$currentLine = [];
+$prevLat = $rows[0]['lat'];
+$prevLon = $rows[0]['lon'];
+$currentLine[] = [round($rows[0]['lon'], 6), round($rows[0]['lat'], 6)];
+
+$color = '#006cff';
+
+for ($i = 1, $count = count($rows); $i < $count; $i++) {
+    $lat = $rows[$i]['lat'];
+    $lon = $rows[$i]['lon'];
+
+    $dlat = $lat - $prevLat;
+    $dlon = ($lon - $prevLon) * $cosLat;
+    $dist2 = $dlat * $dlat + $dlon * $dlon;
+
+    if ($dist2 <= $noiseThreshold2) {
         continue;
     }
 
-    $previousPosition = $position;
+    $prevLat = $lat;
+    $prevLon = $lon;
 
-    if ($distance > 250) {
-        if (count($featurePositions) > 1) {
-            $features[] = new Feature(new LineString($featurePositions), ['color' => $color]);
+    if ($dist2 > $gapThreshold2) {
+        if (count($currentLine) > 1) {
+            $features[] = [
+                'type' => 'Feature',
+                'geometry' => ['type' => 'LineString', 'coordinates' => $currentLine],
+                'properties' => ['color' => $color],
+            ];
         }
-        $featurePositions = [
-          new Point([
-            $position['coordinate']->getLng(),
-            $position['coordinate']->getLat()
-          ])
-        ];
+        $currentLine = [[round($lon, 6), round($lat, 6)]];
     } else {
-        $featurePositions[] = new Point([$position['coordinate']->getLng(), $position['coordinate']->getLat()]);
+        $currentLine[] = [round($lon, 6), round($lat, 6)];
     }
 }
 
-if (count($featurePositions) > 1) {
-    $features[] = new Feature(new LineString($featurePositions), ['color' => $color]);
+if (count($currentLine) > 1) {
+    $features[] = [
+        'type' => 'Feature',
+        'geometry' => ['type' => 'LineString', 'coordinates' => $currentLine],
+        'properties' => ['color' => $color],
+    ];
 }
 
-$featureCollection = new FeatureCollection($features);
 $response = [
     'type' => 'FeatureCollection',
-    'features' => $featureCollection->getFeatures(),
-    'hasMore' => $hasMoreData
+    'features' => $features,
+    'hasMore' => $hasMore,
 ];
+
+if ($hasMore) {
+    $response['nextCursor'] = end($rows)['tst'];
+}
+
 echo json_encode($response);

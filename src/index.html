@@ -70,10 +70,20 @@
 
     var geoJsonStyle = { color: '#006cff', weight: 2 };
 
+    // Full reset: clear all data and reload for the current viewport.
+    // Called on initial load and when speed filter changes.
     function fetchLocations() {
         if (abortController) abortController.abort();
         abortController = new AbortController();
         layerGroup.clearLayers();
+        loadViewportData();
+    }
+
+    // Load data for the current viewport, accumulating onto existing layers.
+    // Called on pan/zoom to fill in newly visible areas without clearing.
+    function loadViewportData() {
+        if (abortController) abortController.abort();
+        abortController = new AbortController();
 
         var bounds = map.getBounds();
         var baseParams = {
@@ -115,7 +125,7 @@
 
     map.on('moveend', function() {
         clearTimeout(moveTimeout);
-        moveTimeout = setTimeout(fetchLocations, 300);
+        moveTimeout = setTimeout(loadViewportData, 300);
     });
 
     fetchLocations();

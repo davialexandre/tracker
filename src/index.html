@@ -44,7 +44,7 @@
     });
 
     var currentSpeed = 8.5;
-    var currentLayer = null;
+    var layerGroup = L.layerGroup().addTo(map);
     var abortController = null;
     var moveTimeout = null;
     var loadingEl = document.getElementById('loading');
@@ -68,37 +68,43 @@
     (new SpeedControl()).addTo(map);
     CartoDB_Positron.addTo(map);
 
+    var geoJsonStyle = { color: '#006cff', weight: 2 };
+
     function fetchLocations() {
         if (abortController) abortController.abort();
         abortController = new AbortController();
-
-        if (currentLayer) {
-            map.removeLayer(currentLayer);
-            currentLayer = null;
-        }
+        layerGroup.clearLayers();
 
         var bounds = map.getBounds();
-        var params = new URLSearchParams({
+        var baseParams = {
             speed: currentSpeed,
             south: bounds.getSouth(),
             north: bounds.getNorth(),
             west: bounds.getWest(),
             east: bounds.getEast(),
             limit: 100000
-        });
+        };
 
         loadingEl.style.display = 'block';
+        loadChunk(baseParams, null);
+    }
+
+    function loadChunk(baseParams, cursor) {
+        var params = new URLSearchParams(baseParams);
+        if (cursor) params.set('cursor', cursor);
 
         fetch('/locations.php?' + params.toString(), { signal: abortController.signal })
             .then(function(response) { return response.json(); })
             .then(function(json) {
-                loadingEl.style.display = 'none';
                 if (json.features && json.features.length > 0) {
-                    currentLayer = L.geoJSON(json, {
-                        style: function(feature) {
-                            return { color: feature.properties.color, weight: 2 };
-                        }
-                    }).addTo(map);
+                    L.geoJSON(json, { style: function() { return geoJsonStyle; } })
+                        .addTo(layerGroup);
+                }
+
+                if (json.hasMore && json.nextCursor) {
+                    loadChunk(baseParams, json.nextCursor);
+                } else {
+                    loadingEl.style.display = 'none';
                 }
             })
             .catch(function(e) {

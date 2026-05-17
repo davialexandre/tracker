@@ -130,29 +130,10 @@ function assign_speeds(array $points): array {
     return $points;
 }
 
-function insert_points(PDO $pdo, array $points): int {
-    if (empty($points)) {
-        return 0;
-    }
-
-    $now = time();
-    $pdo->beginTransaction();
-    try {
-        foreach ($points as $p) {
-            insert_location($pdo, $p, $now);
-        }
-        $pdo->commit();
-        return count($points);
-    } catch (Throwable $e) {
-        $pdo->rollBack();
-        throw $e;
-    }
-}
-
 function import_one(PDO $pdo, string $path): array {
     $parsed = parse_gpx_file($path);
     $points = assign_speeds($parsed['points']);
-    $inserted = insert_points($pdo, $points);
+    $inserted = insert_locations($pdo, $points);
     return [
         'imported' => $inserted,
         'skipped'  => $parsed['skipped'],

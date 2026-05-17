@@ -27,3 +27,22 @@ function insert_location(PDO $pdo, array $row, ?int $now = null): void {
         ':received_at' => $now ?? time(),
     ]);
 }
+
+function insert_locations(PDO $pdo, array $rows): int {
+    if (empty($rows)) {
+        return 0;
+    }
+
+    $now = time();
+    $pdo->beginTransaction();
+    try {
+        foreach ($rows as $row) {
+            insert_location($pdo, $row, $now);
+        }
+        $pdo->commit();
+        return count($rows);
+    } catch (Throwable $e) {
+        $pdo->rollBack();
+        throw $e;
+    }
+}

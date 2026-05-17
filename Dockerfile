@@ -16,4 +16,5 @@ RUN apt-get update && \
     chown www-data:www-data /var/tracker/data && \
     composer install -d /var/www --no-scripts --no-dev && \
     composer dump-autoload -d /var/www --optimize && \
-    echo 'AddOutputFilterByType DEFLATE application/json' >> /etc/apache2/mods-enabled/deflate.conf
+    echo 'AddOutputFilterByType DEFLATE application/json' >> /etc/apache2/mods-enabled/deflate.conf && \
+    echo 'opcache.jit=tracing' > /usr/local/etc/php/conf.d/opcache-jit.ini

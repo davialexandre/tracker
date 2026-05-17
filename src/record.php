@@ -3,6 +3,8 @@
 ini_set('display_errors', '0');
 error_reporting(E_ALL);
 
+require __DIR__ . '/log.php';
+
 header("Content-type: application/json");
 
 $payload = json_decode(file_get_contents('php://input'), true);
@@ -30,7 +32,11 @@ try {
       'received_at' => time()
     ]);
 } catch (Throwable $e) {
-    error_log('record.php insert failed: ' . $e->getMessage());
+    log_error('record.php insert failed', [
+        'exception' => $e::class,
+        'error'     => $e->getMessage(),
+        'payload'   => $payload,
+    ]);
     http_response_code(500);
 }
 

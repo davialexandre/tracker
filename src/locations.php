@@ -1,11 +1,14 @@
 <?php
 
+ini_set('display_errors', '0');
+error_reporting(E_ALL);
+
+require __DIR__ . '/log.php';
+
 if (!ob_start('ob_gzhandler')) {
     ob_start();
 }
 header("Content-type: application/json");
-
-$pdo = new PDO(getenv('DB_DSN'));
 
 $maxSpeed = (float)($_GET['speed'] ?? 8.5);
 $limit = (int)($_GET['limit'] ?? 100000);
@@ -41,9 +44,21 @@ $sql = "SELECT lat, lon, tst FROM location
         ORDER BY tst DESC
         LIMIT :limit";
 
-$stmt = $pdo->prepare($sql);
-$stmt->execute($params);
-$rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+try {
+    $pdo = new PDO(getenv('DB_DSN'));
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (Throwable $e) {
+    log_error('locations.php query failed', [
+        'exception' => $e::class,
+        'error'     => $e->getMessage(),
+        'params'    => $params,
+    ]);
+    http_response_code(500);
+    echo json_encode(['type' => 'FeatureCollection', 'features' => [], 'hasMore' => false]);
+    exit();
+}
 
 $hasMore = count($rows) > $limit;
 if ($hasMore) {

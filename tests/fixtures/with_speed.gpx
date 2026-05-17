@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="fixture"
+     xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v2">
+  <trk>
+    <trkseg>
+      <trkpt lat="-23.5505" lon="-46.6333">
+        <ele>760</ele>
+        <time>2026-05-17T10:00:00Z</time>
+        <extensions><gpxtpx:speed>3.0</gpxtpx:speed></extensions>
+      </trkpt>
+      <trkpt lat="-23.5510" lon="-46.6340">
+        <ele>761</ele>
+        <time>2026-05-17T10:00:05Z</time>
+        <extensions><gpxtpx:speed>5.5</gpxtpx:speed></extensions>
+      </trkpt>
+      <trkpt lat="-23.5515" lon="-46.6347">
+        <ele>762</ele>
+        <time>2026-05-17T10:00:10Z</time>
+        <extensions><gpxtpx:speed>7.2</gpxtpx:speed></extensions>
+      </trkpt>
+      <trkpt lat="-23.5520" lon="-46.6354">
+        <ele>763</ele>
+        <time>2026-05-17T10:00:15Z</time>
+        <extensions><gpxtpx:speed>6.8</gpxtpx:speed></extensions>
+      </trkpt>
+      <trkpt lat="-23.5525" lon="-46.6361">
+        <ele>764</ele>
+        <time>2026-05-17T10:00:20Z</time>
+        <extensions><gpxtpx:speed>4.1</gpxtpx:speed></extensions>
+      </trkpt>
+    </trkseg>
+  </trk>
+</gpx>

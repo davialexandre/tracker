@@ -1,9 +1,6 @@
 <?php
 
-ini_set('display_errors', '0');
-error_reporting(E_ALL);
-
-require __DIR__ . '/log.php';
+require_once __DIR__ . '/../src/bootstrap.php';
 
 if (!ob_start('ob_gzhandler')) {
     ob_start();
@@ -45,7 +42,7 @@ $sql = "SELECT lat, lon, tst FROM location
         LIMIT :limit";
 
 try {
-    $pdo = new PDO(getenv('DB_DSN'));
+    $pdo = connect_db();
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);

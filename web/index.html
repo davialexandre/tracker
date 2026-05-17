@@ -30,10 +30,25 @@
             font-family: sans-serif;
             font-size: 14px;
         }
+        #import-link {
+            position: fixed;
+            top: 10px;
+            left: 60px;
+            background: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            z-index: 1000;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+            font-family: sans-serif;
+            font-size: 13px;
+            color: #006cff;
+            text-decoration: none;
+        }
     </style>
 </head>
 <body>
 <div id="map"></div>
+<a id="import-link" href="/import.html">Import GPX</a>
 <div id="loading">Loading...</div>
 <script type="application/javascript">
     var map = L.map('map', {zoomSnap: 0.25, preferCanvas: true}).setView([-23.54574186833512, -46.608589765419296], 14);

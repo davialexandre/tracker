@@ -30,10 +30,9 @@
             font-family: sans-serif;
             font-size: 14px;
         }
-        #import-link {
+        #import-link, #locate-btn {
             position: fixed;
             top: 10px;
-            left: 60px;
             background: white;
             padding: 6px 12px;
             border-radius: 4px;
@@ -43,12 +42,17 @@
             font-size: 13px;
             color: #006cff;
             text-decoration: none;
+            border: none;
+            cursor: pointer;
         }
+        #import-link { left: 60px; }
+        #locate-btn  { left: 160px; }
     </style>
 </head>
 <body>
 <div id="map"></div>
 <a id="import-link" href="/import.html">Import GPX</a>
+<button id="locate-btn" type="button">Locate me</button>
 <div id="loading">Loading...</div>
 <script type="application/javascript">
     var map = L.map('map', {zoomSnap: 0.25, preferCanvas: true}).setView([-23.54574186833512, -46.608589765419296], 14);
@@ -144,6 +148,47 @@
     });
 
     fetchLocations();
+
+    var currentLocationMarker = null;
+    var currentLocationCircle = null;
+
+    map.on('locationfound', function(e) {
+        if (currentLocationMarker) map.removeLayer(currentLocationMarker);
+        if (currentLocationCircle) map.removeLayer(currentLocationCircle);
+
+        currentLocationMarker = L.circleMarker(e.latlng, {
+            radius: 7,
+            color: '#fff',
+            weight: 2,
+            fillColor: '#006cff',
+            fillOpacity: 1
+        }).addTo(map);
+
+        currentLocationCircle = L.circle(e.latlng, {
+            radius: e.accuracy,
+            color: '#006cff',
+            weight: 1,
+            fillColor: '#006cff',
+            fillOpacity: 0.1
+        }).addTo(map);
+
+        loadingEl.style.display = 'none';
+    });
+
+    map.on('locationerror', function(e) {
+        loadingEl.textContent = 'Location unavailable: ' + e.message;
+        loadingEl.style.display = 'block';
+        setTimeout(function() {
+            loadingEl.style.display = 'none';
+            loadingEl.textContent = 'Loading...';
+        }, 4000);
+    });
+
+    document.getElementById('locate-btn').addEventListener('click', function() {
+        loadingEl.textContent = 'Locating...';
+        loadingEl.style.display = 'block';
+        map.locate({ setView: true, maxZoom: 16, enableHighAccuracy: true, timeout: 10000 });
+    });
 </script>
 </body>
 </html>

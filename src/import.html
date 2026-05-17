@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Import GPX</title>
+  <style>
+    body { font-family: sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; }
+    h1 { font-size: 24px; }
+    form { margin: 24px 0; }
+    input[type=file] { display: block; margin-bottom: 12px; }
+    button { padding: 8px 16px; font-size: 14px; cursor: pointer; }
+    .banner { padding: 12px 16px; border-radius: 4px; background: #eef6ff; margin-bottom: 24px; font-size: 14px; }
+    .banner.err { background: #fdecec; }
+    a { color: #006cff; }
+  </style>
+</head>
+<body>
+  <h1>Import GPX</h1>
+  <div id="banner" style="display:none"></div>
+  <form action="/import.php" method="post" enctype="multipart/form-data">
+    <input type="file" name="gpx[]" accept=".gpx,application/gpx+xml" multiple required>
+    <button type="submit">Import</button>
+  </form>
+  <p><a href="/">Back to map</a></p>
+  <script>
+    var qs = new URLSearchParams(location.search);
+    if (qs.has('imported')) {
+      var imported = parseInt(qs.get('imported') || '0', 10);
+      var files    = parseInt(qs.get('files')    || '0', 10);
+      var skipped  = parseInt(qs.get('skipped')  || '0', 10);
+      var errors   = parseInt(qs.get('errors')   || '0', 10);
+      var b = document.getElementById('banner');
+      b.className = 'banner' + (errors > 0 ? ' err' : '');
+      b.style.display = 'block';
+      b.innerHTML =
+        'Imported <strong>' + imported.toLocaleString() + '</strong> points from <strong>' + files + '</strong> files. ' +
+        'Skipped <strong>' + skipped.toLocaleString() + '</strong> points without timestamps. ' +
+        '<strong>' + errors + '</strong> files failed.';
+    }
+  </script>
+</body>
+</html>

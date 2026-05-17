@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="fixture" xmlns="http://www.topografix.com/GPX/1/1">
+  <trk>
+    <trkseg>
+      <trkpt lat="-23.5505" lon="-46.6333"><time>2026-05-17T10:00:00Z</time></trkpt>
+      <trkpt lat="-23.5510" lon="-46.6340"><time>2026-05-17T10:00:05Z</time></trkpt>
+      <trkpt lat="-23.5515" lon="-46.6347"><time>2026-05-17T10:00:10Z</time></trkpt>
+      <trkpt lat="-23.5520" lon="-46.6354"><time>2026-05-17T10:00:15Z</time></trkpt>
+      <trkpt lat="-23.5525" lon="-46.6361"><time>2026-05-17T10:00:20Z</time></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

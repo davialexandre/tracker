@@ -142,9 +142,8 @@ function insert_points(PDO $pdo, array $points): int {
     $now = time();
     $pdo->beginTransaction();
     try {
-        $stmt = $pdo->prepare(LOCATION_INSERT_SQL);
         foreach ($points as $p) {
-            $stmt->execute(location_bind_values($p, $now));
+            insert_location($pdo, $p, $now);
         }
         $pdo->commit();
         return count($points);

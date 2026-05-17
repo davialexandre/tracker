@@ -12,9 +12,7 @@ if (empty($payload['_type']) || $payload['_type'] !== 'location') {
 }
 
 try {
-    $pdo  = connect_db();
-    $stmt = $pdo->prepare(LOCATION_INSERT_SQL);
-    $stmt->execute(location_bind_values($payload));
+    insert_location(connect_db(), $payload);
 } catch (Throwable $e) {
     log_error('record.php insert failed', [
         'exception' => $e::class,

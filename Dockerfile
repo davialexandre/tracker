@@ -3,7 +3,8 @@ FROM php:8.5-apache
 ENV DB_DSN="sqlite:///var/tracker/data/db.sqlite"
 EXPOSE 80
 
-COPY src /var/www/html
+COPY web /var/www/html
+COPY src /var/www/src
 
 RUN mkdir -p /var/tracker/data && \
     chown www-data:www-data /var/tracker/data && \

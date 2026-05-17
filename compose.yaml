@@ -6,7 +6,8 @@ services:
     ports:
       - "9899:80"
     volumes:
-      - ./src:/var/www/html
+      - ./web:/var/www/html
+      - ./src:/var/www/src
       - ./scripts:/var/www/scripts
       - data:/var/tracker/data
 

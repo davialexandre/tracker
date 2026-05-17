@@ -147,7 +147,9 @@
         moveTimeout = setTimeout(loadViewportData, 300);
     });
 
-    fetchLocations();
+    loadingEl.textContent = 'Locating...';
+    loadingEl.style.display = 'block';
+    map.locate({ setView: true, maxZoom: 14, enableHighAccuracy: true, timeout: 10000 });
 
     var currentLocationMarker = null;
     var currentLocationCircle = null;
@@ -173,6 +175,7 @@
         }).addTo(map);
 
         loadingEl.style.display = 'none';
+        loadingEl.textContent = 'Loading...';
     });
 
     map.on('locationerror', function(e) {
@@ -182,6 +185,7 @@
             loadingEl.style.display = 'none';
             loadingEl.textContent = 'Loading...';
         }, 4000);
+        if (layerGroup.getLayers().length === 0) fetchLocations();
     });
 
     document.getElementById('locate-btn').addEventListener('click', function() {

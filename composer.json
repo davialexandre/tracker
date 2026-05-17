@@ -1,7 +1,0 @@
-{
-  "require": {
-    "jmikola/geojson": "^1.0",
-    "mjaschen/phpgeo": "^4.2",
-    "ext-pdo": "*"
-  }
-}

@@ -2,10 +2,6 @@
 
 require_once __DIR__ . '/bootstrap.php';
 
-// =====================================================================
-// Functions (top of file, no side effects on require)
-// =====================================================================
-
 function haversine(float $lat1, float $lon1, float $lat2, float $lon2): float {
     $r = 6371000.0; // Earth radius in meters
     $phi1 = deg2rad($lat1);
@@ -161,16 +157,6 @@ function import_one(PDO $pdo, string $path): array {
         'imported' => $inserted,
         'skipped'  => $parsed['skipped'],
     ];
-}
-
-// =====================================================================
-// Handler — runs only on a web request. Requiring this file from the CLI
-// (for smoke-checks in later tasks) is safe: PHP_SAPI === 'cli' makes us
-// return before touching $_SERVER / $_FILES / headers.
-// =====================================================================
-
-if (PHP_SAPI === 'cli') {
-    return;
 }
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST' || empty($_FILES['gpx'])) {

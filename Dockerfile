@@ -1,6 +1,6 @@
-FROM php:8.2-apache
+FROM php:8.5-apache
 
-COPY --from=composer:2.1 /usr/bin/composer /usr/bin/composer
+COPY --from=composer:2.8 /usr/bin/composer /usr/bin/composer
 
 ENV DB_DSN="sqlite:///var/tracker/data/db.sqlite"
 EXPOSE 80

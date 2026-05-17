@@ -70,8 +70,10 @@ if (empty($rows)) {
     exit();
 }
 
+$first = array_first($rows);
+
 // Equirectangular distance approximation (submillimeter accuracy at these scales)
-$centerLat = $hasBounds ? deg2rad(($south + $north) / 2) : deg2rad($rows[0]['lat']);
+$centerLat = $hasBounds ? deg2rad(($south + $north) / 2) : deg2rad($first['lat']);
 $cosLat = cos($centerLat);
 $metersPerDeg = 111320.0;
 $noiseThreshold2 = (3.5 / $metersPerDeg) ** 2;
@@ -79,9 +81,9 @@ $gapThreshold2 = (250.0 / $metersPerDeg) ** 2;
 
 $features = [];
 $currentLine = [];
-$prevLat = $rows[0]['lat'];
-$prevLon = $rows[0]['lon'];
-$currentLine[] = [round($rows[0]['lon'], 6), round($rows[0]['lat'], 6)];
+$prevLat = $first['lat'];
+$prevLon = $first['lon'];
+$currentLine[] = [round($first['lon'], 6), round($first['lat'], 6)];
 
 $color = '#006cff';
 
@@ -129,7 +131,7 @@ $response = [
 ];
 
 if ($hasMore) {
-    $response['nextCursor'] = end($rows)['tst'];
+    $response['nextCursor'] = array_last($rows)['tst'];
 }
 
 echo json_encode($response);

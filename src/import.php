@@ -1,9 +1,6 @@
 <?php
 
-ini_set('display_errors', '0');
-error_reporting(E_ALL);
-
-require __DIR__ . '/log.php';
+require_once __DIR__ . '/bootstrap.php';
 
 // =====================================================================
 // Functions (top of file, no side effects on require)
@@ -145,19 +142,9 @@ function insert_points(PDO $pdo, array $points): int {
     $now = time();
     $pdo->beginTransaction();
     try {
-        $stmt = $pdo->prepare(<<<SQL
-            INSERT INTO location (acc, alt, lat, lon, vac, vel, tst, received_at)
-            VALUES (0, :alt, :lat, :lon, 0, :vel, :tst, :received_at)
-        SQL);
+        $stmt = $pdo->prepare(LOCATION_INSERT_SQL);
         foreach ($points as $p) {
-            $stmt->execute([
-                ':alt'         => $p['alt'],
-                ':lat'         => $p['lat'],
-                ':lon'         => $p['lon'],
-                ':vel'         => $p['vel'],
-                ':tst'         => $p['tst'],
-                ':received_at' => $now,
-            ]);
+            $stmt->execute(location_bind_values($p, $now));
         }
         $pdo->commit();
         return count($points);
@@ -192,8 +179,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST' || empty($_FILES['gpx'])) {
     exit;
 }
 
-$pdo = new PDO(getenv('DB_DSN'));
-$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+$pdo = connect_db();
 
 $filesSeen = 0;
 $files     = 0;

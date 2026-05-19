@@ -141,6 +141,7 @@
     });
 
     var currentSpeed = 8.5;
+    var currentAccMax = 0; // 0 = no accuracy filter
     var layerGroup = L.layerGroup().addTo(map);
     var abortController = null;
     var moveTimeout = null;
@@ -153,6 +154,7 @@
             container.min = 0;
             container.step = 0.5;
             container.value = currentSpeed;
+            container.title = 'Max speed (m/s)';
             container.onchange = function() {
                 currentSpeed = parseFloat(container.value) || 8.5;
                 fetchLocations();
@@ -162,7 +164,26 @@
         }
     });
 
+    var AccuracyControl = L.Control.extend({
+        onAdd: function() {
+            var container = L.DomUtil.create('input');
+            container.type = 'number';
+            container.min = 0;
+            container.step = 5;
+            container.placeholder = 'acc m';
+            container.title = 'Max accuracy radius (m). Empty = no filter.';
+            container.onchange = function() {
+                var v = parseInt(container.value, 10);
+                currentAccMax = (isNaN(v) || v <= 0) ? 0 : v;
+                fetchLocations();
+            };
+            L.DomEvent.disableClickPropagation(container);
+            return container;
+        }
+    });
+
     (new SpeedControl()).addTo(map);
+    (new AccuracyControl()).addTo(map);
     CartoDB_Positron.addTo(map);
 
     // Dedicated pane (and renderer) for the location dot so it always
@@ -221,6 +242,7 @@
             east: bounds.getEast(),
             limit: 100000
         };
+        if (currentAccMax > 0) baseParams.acc_max = currentAccMax;
 
         loadingEl.style.display = 'block';
         loadChunk(baseParams, null);

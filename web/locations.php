@@ -10,11 +10,19 @@ header("Content-type: application/json");
 $maxSpeed = (float)($_GET['speed'] ?? 8.5);
 $limit = (int)($_GET['limit'] ?? 100000);
 $cursor = isset($_GET['cursor']) ? (int)$_GET['cursor'] : PHP_INT_MAX;
+$maxAcc = isset($_GET['acc_max']) ? (int)$_GET['acc_max'] : 0;
 
 $hasBounds = isset($_GET['south'], $_GET['north'], $_GET['west'], $_GET['east']);
 
 $params = [':maxSpeed' => $maxSpeed, ':cursor' => $cursor, ':limit' => $limit + 1];
 $boundsClause = '';
+$accClause = '';
+
+// acc = 0 means "missing/unknown" (older imports, GPX) — kept regardless.
+if ($maxAcc > 0) {
+    $accClause = 'AND (acc = 0 OR acc <= :maxAcc)';
+    $params[':maxAcc'] = $maxAcc;
+}
 
 if ($hasBounds) {
     $south = (float)$_GET['south'];
@@ -37,6 +45,7 @@ if ($hasBounds) {
 $sql = "SELECT lat, lon, tst FROM location
         WHERE vel >= 0 AND vel < :maxSpeed
         AND tst < :cursor
+        $accClause
         $boundsClause
         ORDER BY tst DESC
         LIMIT :limit";

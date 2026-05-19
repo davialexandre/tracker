@@ -87,6 +87,12 @@
     (new SpeedControl()).addTo(map);
     CartoDB_Positron.addTo(map);
 
+    // Dedicated pane (and renderer) for the location dot so it always
+    // paints above the line layers regardless of load order.
+    map.createPane('locationPane');
+    map.getPane('locationPane').style.zIndex = 650;
+    var locationRenderer = L.canvas({ pane: 'locationPane' });
+
     var geoJsonStyle = { color: '#006cff', weight: 2 };
 
     // Full reset: clear all data and reload for the current viewport.
@@ -147,32 +153,74 @@
         moveTimeout = setTimeout(loadViewportData, 300);
     });
 
-    loadingEl.textContent = 'Locating...';
-    loadingEl.style.display = 'block';
-    map.locate({ setView: true, maxZoom: 14, enableHighAccuracy: true, timeout: 10000 });
-
     var currentLocationMarker = null;
     var currentLocationCircle = null;
+    var locating = false;
+    var pendingRecenter = null;
+    var locateBtn = document.getElementById('locate-btn');
+
+    function startLocating(recenterMaxZoom) {
+        locating = true;
+        pendingRecenter = recenterMaxZoom;
+        locateBtn.textContent = 'Stop locating';
+        loadingEl.textContent = 'Locating...';
+        loadingEl.style.display = 'block';
+        map.locate({ watch: true, enableHighAccuracy: true, timeout: 10000 });
+    }
+
+    function stopLocating() {
+        locating = false;
+        pendingRecenter = null;
+        locateBtn.textContent = 'Locate me';
+        map.stopLocate();
+        if (currentLocationMarker) {
+            map.removeLayer(currentLocationMarker);
+            currentLocationMarker = null;
+        }
+        if (currentLocationCircle) {
+            map.removeLayer(currentLocationCircle);
+            currentLocationCircle = null;
+        }
+        loadingEl.style.display = 'none';
+        loadingEl.textContent = 'Loading...';
+    }
 
     map.on('locationfound', function(e) {
-        if (currentLocationMarker) map.removeLayer(currentLocationMarker);
-        if (currentLocationCircle) map.removeLayer(currentLocationCircle);
+        if (currentLocationMarker) {
+            currentLocationMarker.setLatLng(e.latlng);
+        } else {
+            currentLocationMarker = L.circleMarker(e.latlng, {
+                radius: 7,
+                color: '#fff',
+                weight: 2,
+                fillColor: '#006cff',
+                fillOpacity: 1,
+                pane: 'locationPane',
+                renderer: locationRenderer
+            }).addTo(map);
+        }
 
-        currentLocationMarker = L.circleMarker(e.latlng, {
-            radius: 7,
-            color: '#fff',
-            weight: 2,
-            fillColor: '#006cff',
-            fillOpacity: 1
-        }).addTo(map);
+        if (currentLocationCircle) {
+            currentLocationCircle.setLatLng(e.latlng);
+            currentLocationCircle.setRadius(e.accuracy);
+        } else {
+            currentLocationCircle = L.circle(e.latlng, {
+                radius: e.accuracy,
+                color: '#006cff',
+                weight: 1,
+                fillColor: '#006cff',
+                fillOpacity: 0.1,
+                pane: 'locationPane',
+                renderer: locationRenderer
+            }).addTo(map);
+        }
 
-        currentLocationCircle = L.circle(e.latlng, {
-            radius: e.accuracy,
-            color: '#006cff',
-            weight: 1,
-            fillColor: '#006cff',
-            fillOpacity: 0.1
-        }).addTo(map);
+        if (pendingRecenter !== null) {
+            var bounds = e.latlng.toBounds(e.accuracy * 2);
+            var zoom = Math.min(map.getBoundsZoom(bounds), pendingRecenter);
+            map.setView(e.latlng, zoom);
+            pendingRecenter = null;
+        }
 
         loadingEl.style.display = 'none';
         loadingEl.textContent = 'Loading...';
@@ -182,17 +230,21 @@
         loadingEl.textContent = 'Location unavailable: ' + e.message;
         loadingEl.style.display = 'block';
         setTimeout(function() {
+            if (!locating) loadingEl.textContent = 'Loading...';
             loadingEl.style.display = 'none';
-            loadingEl.textContent = 'Loading...';
         }, 4000);
         if (layerGroup.getLayers().length === 0) fetchLocations();
     });
 
-    document.getElementById('locate-btn').addEventListener('click', function() {
-        loadingEl.textContent = 'Locating...';
-        loadingEl.style.display = 'block';
-        map.locate({ setView: true, maxZoom: 16, enableHighAccuracy: true, timeout: 10000 });
+    locateBtn.addEventListener('click', function() {
+        if (locating) {
+            stopLocating();
+        } else {
+            startLocating(16);
+        }
     });
+
+    startLocating(14);
 </script>
 </body>
 </html>

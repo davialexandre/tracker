@@ -141,7 +141,7 @@
     });
 
     var currentSpeed = 8.5;
-    var currentAccMax = 0; // 0 = no accuracy filter
+    var currentAccMax = 15; // meters; 0 = no accuracy filter
     var layerGroup = L.layerGroup().addTo(map);
     var abortController = null;
     var moveTimeout = null;
@@ -170,6 +170,7 @@
             container.type = 'number';
             container.min = 0;
             container.step = 5;
+            container.value = currentAccMax;
             container.placeholder = 'acc m';
             container.title = 'Max accuracy radius (m). Empty = no filter.';
             container.onchange = function() {

@@ -30,13 +30,19 @@
             font-family: sans-serif;
             font-size: 14px;
         }
-        #import-link, #locate-btn {
+        #topbar {
             position: fixed;
             top: 10px;
+            left: 60px;
+            z-index: 1000;
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        #topbar a, #topbar button {
             background: white;
             padding: 6px 12px;
             border-radius: 4px;
-            z-index: 1000;
             box-shadow: 0 1px 4px rgba(0,0,0,0.3);
             font-family: sans-serif;
             font-size: 13px;
@@ -45,14 +51,83 @@
             border: none;
             cursor: pointer;
         }
-        #import-link { left: 60px; }
-        #locate-btn  { left: 160px; }
+        #color-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        #color-btn .swatch {
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            border: 1px solid rgba(0,0,0,0.15);
+            flex-shrink: 0;
+        }
+        #color-panel {
+            position: fixed;
+            background: white;
+            padding: 8px;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+            z-index: 1000;
+            font-family: sans-serif;
+            font-size: 13px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 160px;
+        }
+        #color-panel[hidden] { display: none; }
+        #color-panel .picker-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 6px;
+            border-radius: 4px;
+            cursor: pointer;
+            color: #333;
+        }
+        #color-panel .picker-row:hover { background: #f5f5f5; }
+        #color-panel .picker-row input[type="color"] {
+            width: 30px;
+            height: 24px;
+            padding: 0;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            cursor: pointer;
+            background: white;
+        }
+        #color-panel #reset-color-btn {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #333;
+            text-align: left;
+            font-family: inherit;
+        }
+        #color-panel #reset-color-btn:hover { background: #f5f5f5; }
     </style>
 </head>
 <body>
 <div id="map"></div>
-<a id="import-link" href="/import.html">Import GPX</a>
-<button id="locate-btn" type="button">Locate me</button>
+<div id="topbar">
+    <a id="import-link" href="/import.html">Import GPX</a>
+    <button id="locate-btn" type="button">Locate me</button>
+    <button id="color-btn" type="button" title="Change line color">
+        <span class="swatch"></span>
+        <span>Color</span>
+    </button>
+</div>
+<div id="color-panel" hidden>
+    <label class="picker-row">
+        <input id="nativeColor" type="color">
+        <span>Pick a color</span>
+    </label>
+    <button id="reset-color-btn" type="button">Reset to default</button>
+</div>
 <div id="loading">Loading...</div>
 <script type="application/javascript">
     var map = L.map('map', {zoomSnap: 0.25, preferCanvas: true}).setView([-23.54574186833512, -46.608589765419296], 14);
@@ -93,7 +168,31 @@
     map.getPane('locationPane').style.zIndex = 650;
     var locationRenderer = L.canvas({ pane: 'locationPane' });
 
-    var geoJsonStyle = { color: '#006cff', weight: 2 };
+    var DEFAULT_LINE_COLOR = '#0d9488';
+    var LINE_COLOR_KEY = 'tracker.lineColor';
+    var HEX_RE = /^#[0-9a-fA-F]{6}$/;
+
+    function readStoredLineColor() {
+        try {
+            var v = localStorage.getItem(LINE_COLOR_KEY);
+            if (v && HEX_RE.test(v)) return v;
+        } catch (e) {}
+        return DEFAULT_LINE_COLOR;
+    }
+
+    var currentLineColor = readStoredLineColor();
+    var geoJsonStyle = { color: currentLineColor, weight: 2 };
+
+    function applyLineColor(hex) {
+        currentLineColor = hex;
+        geoJsonStyle.color = hex;
+        layerGroup.eachLayer(function(layer) {
+            layer.setStyle({ color: hex });
+        });
+        document.querySelector('#color-btn .swatch').style.background = hex;
+        document.getElementById('nativeColor').value = hex;
+        try { localStorage.setItem(LINE_COLOR_KEY, hex); } catch (e) {}
+    }
 
     // Full reset: clear all data and reload for the current viewport.
     // Called on initial load and when speed filter changes.
@@ -243,6 +342,38 @@
             startLocating(16);
         }
     });
+
+    var colorBtn = document.getElementById('color-btn');
+    var colorPanel = document.getElementById('color-panel');
+
+    function positionColorPanel() {
+        var rect = colorBtn.getBoundingClientRect();
+        colorPanel.style.left = rect.left + 'px';
+        colorPanel.style.top = (rect.bottom + 4) + 'px';
+    }
+
+    colorBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (colorPanel.hidden) {
+            positionColorPanel();
+            colorPanel.hidden = false;
+        } else {
+            colorPanel.hidden = true;
+        }
+    });
+    colorPanel.addEventListener('click', function(e) { e.stopPropagation(); });
+    document.addEventListener('click', function() {
+        if (!colorPanel.hidden) colorPanel.hidden = true;
+    });
+
+    document.getElementById('nativeColor').addEventListener('input', function(e) {
+        applyLineColor(e.target.value);
+    });
+    document.getElementById('reset-color-btn').addEventListener('click', function() {
+        applyLineColor(DEFAULT_LINE_COLOR);
+    });
+
+    applyLineColor(currentLineColor);
 
     startLocating(14);
 </script>

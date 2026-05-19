@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Map</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
           integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
@@ -130,7 +131,9 @@
 </div>
 <div id="loading">Loading...</div>
 <script type="application/javascript">
-    var map = L.map('map', {zoomSnap: 0.25, preferCanvas: true}).setView([-23.54574186833512, -46.608589765419296], 14);
+    // On phones (viewport < 600px), open and locate at street zoom.
+    var INITIAL_ZOOM = window.innerWidth < 600 ? 17 : 14;
+    var map = L.map('map', {zoomSnap: 0.25, preferCanvas: true}).setView([-23.54574186833512, -46.608589765419296], INITIAL_ZOOM);
     var CartoDB_Positron = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
         subdomains: 'abcd',
@@ -315,9 +318,7 @@
         }
 
         if (pendingRecenter !== null) {
-            var bounds = e.latlng.toBounds(e.accuracy * 2);
-            var zoom = Math.min(map.getBoundsZoom(bounds), pendingRecenter);
-            map.setView(e.latlng, zoom);
+            map.setView(e.latlng, pendingRecenter);
             pendingRecenter = null;
         }
 
@@ -375,7 +376,7 @@
 
     applyLineColor(currentLineColor);
 
-    startLocating(14);
+    startLocating(INITIAL_ZOOM);
 </script>
 </body>
 </html>

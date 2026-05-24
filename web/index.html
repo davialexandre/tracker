@@ -110,6 +110,49 @@
             font-family: inherit;
         }
         #color-panel #reset-color-btn:hover { background: #f5f5f5; }
+        #date-panel {
+            position: fixed;
+            background: white;
+            padding: 8px;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+            z-index: 1000;
+            font-family: sans-serif;
+            font-size: 13px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-width: 220px;
+        }
+        #date-panel[hidden] { display: none; }
+        #date-panel .date-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #333;
+        }
+        #date-panel .date-row label {
+            width: 42px;
+        }
+        #date-panel .date-row input[type="date"] {
+            flex: 1;
+            font: inherit;
+            padding: 4px 6px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+        #date-panel #date-clear-btn {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #333;
+            text-align: left;
+            font-family: inherit;
+        }
+        #date-panel #date-clear-btn:hover { background: #f5f5f5; }
     </style>
 </head>
 <body>
@@ -121,6 +164,7 @@
         <span class="swatch"></span>
         <span>Color</span>
     </button>
+    <button id="dates-btn" type="button">Dates</button>
 </div>
 <div id="color-panel" hidden>
     <label class="picker-row">
@@ -128,6 +172,17 @@
         <span>Pick a color</span>
     </label>
     <button id="reset-color-btn" type="button">Reset to default</button>
+</div>
+<div id="date-panel" hidden>
+    <div class="date-row">
+        <label for="date-from">From</label>
+        <input id="date-from" type="date">
+    </div>
+    <div class="date-row">
+        <label for="date-to">To</label>
+        <input id="date-to" type="date">
+    </div>
+    <button id="date-clear-btn" type="button">Clear</button>
 </div>
 <div id="loading">Loading...</div>
 <script type="application/javascript">
@@ -142,6 +197,8 @@
 
     var currentSpeed = 8.5;
     var currentAccMax = 15; // meters; 0 = no accuracy filter
+    var currentFrom = null; // 'YYYY-MM-DD' or null
+    var currentTo = null;   // 'YYYY-MM-DD' or null
     var layerGroup = L.layerGroup().addTo(map);
     var abortController = null;
     var moveTimeout = null;
@@ -219,6 +276,21 @@
         try { localStorage.setItem(LINE_COLOR_KEY, hex); } catch (e) {}
     }
 
+    function dateStringToUnixStart(yyyyMmDd) {
+        // Treat yyyy-mm-dd as local midnight.
+        return Math.floor(new Date(yyyyMmDd + 'T00:00:00').getTime() / 1000);
+    }
+
+    // Single funnel that every UI path (manual inputs, presets, year dropdown,
+    // Clear button) goes through. Keeps the inputs, state vars, and fetch in sync.
+    function setRange(from, to) {
+        currentFrom = from || null;
+        currentTo   = to   || null;
+        document.getElementById('date-from').value = currentFrom || '';
+        document.getElementById('date-to').value   = currentTo   || '';
+        fetchLocations();
+    }
+
     // Full reset: clear all data and reload for the current viewport.
     // Called on initial load and when speed filter changes.
     function fetchLocations() {
@@ -244,6 +316,8 @@
             limit: 100000
         };
         if (currentAccMax > 0) baseParams.acc_max = currentAccMax;
+        if (currentFrom) baseParams.from = dateStringToUnixStart(currentFrom);
+        if (currentTo)   baseParams.to   = dateStringToUnixStart(currentTo) + 86400;
 
         loadingEl.style.display = 'block';
         loadChunk(baseParams, null);
@@ -388,6 +462,7 @@
     colorPanel.addEventListener('click', function(e) { e.stopPropagation(); });
     document.addEventListener('click', function() {
         if (!colorPanel.hidden) colorPanel.hidden = true;
+        if (!datePanel.hidden) datePanel.hidden = true;
     });
 
     document.getElementById('nativeColor').addEventListener('input', function(e) {
@@ -395,6 +470,39 @@
     });
     document.getElementById('reset-color-btn').addEventListener('click', function() {
         applyLineColor(DEFAULT_LINE_COLOR);
+    });
+
+    var datesBtn  = document.getElementById('dates-btn');
+    var datePanel = document.getElementById('date-panel');
+    var dateFromEl = document.getElementById('date-from');
+    var dateToEl   = document.getElementById('date-to');
+
+    function positionDatePanel() {
+        var rect = datesBtn.getBoundingClientRect();
+        datePanel.style.left = rect.left + 'px';
+        datePanel.style.top  = (rect.bottom + 4) + 'px';
+    }
+
+    datesBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (datePanel.hidden) {
+            positionDatePanel();
+            datePanel.hidden = false;
+        } else {
+            datePanel.hidden = true;
+        }
+    });
+    datePanel.addEventListener('click', function(e) { e.stopPropagation(); });
+
+    dateFromEl.addEventListener('change', function() {
+        setRange(dateFromEl.value, dateToEl.value);
+    });
+    dateToEl.addEventListener('change', function() {
+        setRange(dateFromEl.value, dateToEl.value);
+    });
+
+    document.getElementById('date-clear-btn').addEventListener('click', function() {
+        setRange(null, null);
     });
 
     applyLineColor(currentLineColor);

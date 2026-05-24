@@ -211,7 +211,7 @@
         <circle cx="12" cy="19" r="2" fill="currentColor"/>
     </svg>
 </button>
-<div id="menu-panel" role="menu" hidden>
+<div id="menu-panel" hidden>
     <div class="section">
         <div class="section-label">Dates</div>
         <div class="preset-row">
@@ -588,6 +588,8 @@
 
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape' && !menuPanel.hidden) {
+            var active = document.activeElement;
+            if (active && active.type === 'date') return;
             closeMenuPanel();
         }
     });

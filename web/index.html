@@ -22,7 +22,8 @@
             display: none;
             position: fixed;
             top: 10px;
-            right: 10px;
+            left: 50%;
+            transform: translateX(-50%);
             background: white;
             padding: 8px 16px;
             border-radius: 4px;
@@ -36,117 +37,73 @@
             top: 10px;
             left: 60px;
             z-index: 1000;
-            display: flex;
-            gap: 6px;
-            align-items: center;
         }
-        #topbar a, #topbar button {
+        .icon-btn {
             background: white;
-            padding: 6px 12px;
-            border-radius: 4px;
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
             box-shadow: 0 1px 4px rgba(0,0,0,0.3);
-            font-family: sans-serif;
-            font-size: 13px;
-            color: #006cff;
-            text-decoration: none;
             border: none;
             cursor: pointer;
-        }
-        #color-btn {
+            color: #006cff;
             display: flex;
             align-items: center;
-            gap: 6px;
-        }
-        #color-btn .swatch {
-            width: 14px;
-            height: 14px;
-            border-radius: 3px;
-            border: 1px solid rgba(0,0,0,0.15);
-            flex-shrink: 0;
-        }
-        #color-panel {
-            position: fixed;
-            background: white;
-            padding: 8px;
-            border-radius: 6px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-            z-index: 1000;
-            font-family: sans-serif;
-            font-size: 13px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            min-width: 160px;
-        }
-        #color-panel[hidden] { display: none; }
-        #color-panel .picker-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 4px 6px;
-            border-radius: 4px;
-            cursor: pointer;
-            color: #333;
-        }
-        #color-panel .picker-row:hover { background: #f5f5f5; }
-        #color-panel .picker-row input[type="color"] {
-            width: 30px;
-            height: 24px;
+            justify-content: center;
             padding: 0;
-            border: 1px solid #ccc;
-            border-radius: 3px;
-            cursor: pointer;
-            background: white;
+            font-family: sans-serif;
         }
-        #color-panel #reset-color-btn {
-            background: white;
-            border: 1px solid #ddd;
-            padding: 6px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            color: #333;
-            text-align: left;
-            font-family: inherit;
+        .icon-btn:hover { background: #f5f5f5; }
+        #locate-btn.active {
+            background: #006cff;
+            color: white;
         }
-        #color-panel #reset-color-btn:hover { background: #f5f5f5; }
-        #date-panel {
+        #locate-btn.active:hover { background: #0058d4; }
+        #menu-btn {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+        }
+        #menu-panel {
             position: fixed;
             background: white;
-            padding: 8px;
+            padding: 12px;
             border-radius: 6px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.25);
             z-index: 1000;
             font-family: sans-serif;
             font-size: 13px;
+            width: min(320px, calc(100vw - 20px));
+            box-sizing: border-box;
+            max-height: calc(100vh - 60px);
+            overflow-y: auto;
+        }
+        #menu-panel[hidden] { display: none; }
+        #menu-panel .section {
+            padding: 6px 0;
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            min-width: 220px;
-        }
-        #date-panel[hidden] { display: none; }
-        #date-panel .date-row {
-            display: flex;
-            align-items: center;
             gap: 6px;
-            color: #333;
         }
-        #date-panel .date-row label {
-            width: 42px;
+        #menu-panel .section-label {
+            text-transform: uppercase;
+            font-size: 11px;
+            color: #888;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
         }
-        #date-panel .date-row input[type="date"] {
-            flex: 1;
-            font: inherit;
-            padding: 4px 6px;
-            border: 1px solid #ccc;
-            border-radius: 3px;
+        #menu-panel hr {
+            border: none;
+            border-top: 1px solid #eee;
+            margin: 0;
         }
-        #date-panel .preset-row {
+        #menu-panel .preset-row {
             display: flex;
             flex-wrap: wrap;
             gap: 4px;
         }
-        #date-panel .preset-row button {
+        #menu-panel .preset-row button {
             background: white;
             border: 1px solid #ddd;
             padding: 4px 8px;
@@ -156,8 +113,41 @@
             color: #006cff;
             font-family: inherit;
         }
-        #date-panel .preset-row button:hover { background: #f5f5f5; }
-        #date-panel #date-clear-btn {
+        #menu-panel .preset-row button:hover { background: #f5f5f5; }
+        #menu-panel #year-select {
+            font: inherit;
+            padding: 4px 6px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            background: white;
+        }
+        #menu-panel .date-row,
+        #menu-panel .filter-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #333;
+        }
+        #menu-panel .date-row label { width: 42px; }
+        #menu-panel .filter-row label { flex: 1; }
+        #menu-panel .date-row input[type="date"] {
+            flex: 1;
+            font: inherit;
+            padding: 4px 6px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            min-width: 0;
+        }
+        #menu-panel .filter-row input[type="number"] {
+            width: 80px;
+            font: inherit;
+            padding: 4px 6px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            text-align: right;
+        }
+        #menu-panel #date-clear-btn,
+        #menu-panel #reset-color-btn {
             background: white;
             border: 1px solid #ddd;
             padding: 6px 10px;
@@ -167,55 +157,106 @@
             color: #333;
             text-align: left;
             font-family: inherit;
+            align-self: flex-start;
         }
-        #date-panel #date-clear-btn:hover { background: #f5f5f5; }
-        #date-panel #year-select {
-            font: inherit;
-            padding: 4px 6px;
+        #menu-panel #date-clear-btn:hover,
+        #menu-panel #reset-color-btn:hover { background: #f5f5f5; }
+        #menu-panel .picker-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 0;
+            color: #333;
+            cursor: pointer;
+        }
+        #menu-panel .picker-row input[type="color"] {
+            width: 30px;
+            height: 24px;
+            padding: 0;
             border: 1px solid #ccc;
             border-radius: 3px;
+            cursor: pointer;
             background: white;
+        }
+        #menu-panel .menu-link {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: #006cff;
+            text-decoration: none;
+            padding: 6px 0;
+            font-family: inherit;
+            font-size: 13px;
         }
     </style>
 </head>
 <body>
 <div id="map"></div>
 <div id="topbar">
-    <a id="import-link" href="/import.html">Import GPX</a>
-    <button id="locate-btn" type="button">Locate me</button>
-    <button id="color-btn" type="button" title="Change line color">
-        <span class="swatch"></span>
-        <span>Color</span>
+    <button id="locate-btn" class="icon-btn" type="button" title="Locate me" aria-label="Locate me">
+        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="3" fill="currentColor"/>
+            <circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/>
+            <line x1="12" y1="1" x2="12" y2="4" stroke="currentColor" stroke-width="2"/>
+            <line x1="12" y1="20" x2="12" y2="23" stroke="currentColor" stroke-width="2"/>
+            <line x1="1" y1="12" x2="4" y2="12" stroke="currentColor" stroke-width="2"/>
+            <line x1="20" y1="12" x2="23" y2="12" stroke="currentColor" stroke-width="2"/>
+        </svg>
     </button>
-    <button id="dates-btn" type="button">Dates</button>
 </div>
-<div id="color-panel" hidden>
-    <label class="picker-row">
-        <input id="nativeColor" type="color">
-        <span>Pick a color</span>
-    </label>
-    <button id="reset-color-btn" type="button">Reset to default</button>
-</div>
-<div id="date-panel" hidden>
-    <div class="preset-row">
-        <button type="button" data-preset="today">Today</button>
-        <button type="button" data-preset="this-week">This week</button>
-        <button type="button" data-preset="this-month">This month</button>
-        <button type="button" data-preset="this-year">This year</button>
-        <button type="button" data-preset="last-year">Last year</button>
+<button id="menu-btn" class="icon-btn" type="button" title="More" aria-label="More" aria-expanded="false">
+    <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="5" r="2" fill="currentColor"/>
+        <circle cx="12" cy="12" r="2" fill="currentColor"/>
+        <circle cx="12" cy="19" r="2" fill="currentColor"/>
+    </svg>
+</button>
+<div id="menu-panel" role="menu" hidden>
+    <div class="section">
+        <div class="section-label">Dates</div>
+        <div class="preset-row">
+            <button type="button" data-preset="today">Today</button>
+            <button type="button" data-preset="this-week">This week</button>
+            <button type="button" data-preset="this-month">This month</button>
+            <button type="button" data-preset="this-year">This year</button>
+            <button type="button" data-preset="last-year">Last year</button>
+        </div>
+        <select id="year-select" hidden>
+            <option value="">Year…</option>
+        </select>
+        <div class="date-row">
+            <label for="date-from">From</label>
+            <input id="date-from" type="date">
+        </div>
+        <div class="date-row">
+            <label for="date-to">To</label>
+            <input id="date-to" type="date">
+        </div>
+        <button id="date-clear-btn" type="button">Clear</button>
     </div>
-    <select id="year-select" hidden>
-        <option value="">Year…</option>
-    </select>
-    <div class="date-row">
-        <label for="date-from">From</label>
-        <input id="date-from" type="date">
+    <hr>
+    <div class="section">
+        <div class="section-label">Filters</div>
+        <div class="filter-row">
+            <label for="speed-input">Max speed (m/s)</label>
+            <input id="speed-input" type="number" min="0" step="0.5" value="8.5" title="Max speed (m/s)">
+        </div>
+        <div class="filter-row">
+            <label for="accuracy-input">Max accuracy (m)</label>
+            <input id="accuracy-input" type="number" min="0" step="5" value="15" placeholder="acc m" title="Max accuracy radius (m). Empty = no filter.">
+        </div>
     </div>
-    <div class="date-row">
-        <label for="date-to">To</label>
-        <input id="date-to" type="date">
+    <hr>
+    <div class="section">
+        <div class="section-label">Line color</div>
+        <label class="picker-row">
+            <input id="nativeColor" type="color">
+            <span>Pick a color</span>
+        </label>
+        <button id="reset-color-btn" type="button">Reset to default</button>
     </div>
-    <button id="date-clear-btn" type="button">Clear</button>
+    <hr>
+    <a id="import-link" href="/import.html" class="menu-link">Import GPX <span aria-hidden="true">›</span></a>
 </div>
 <div id="loading">Loading...</div>
 <script type="application/javascript">
@@ -238,44 +279,6 @@
     var moveTimeout = null;
     var loadingEl = document.getElementById('loading');
 
-    var SpeedControl = L.Control.extend({
-        onAdd: function() {
-            var container = L.DomUtil.create('input');
-            container.type = 'number';
-            container.min = 0;
-            container.step = 0.5;
-            container.value = currentSpeed;
-            container.title = 'Max speed (m/s)';
-            container.onchange = function() {
-                currentSpeed = parseFloat(container.value) || 8.5;
-                fetchLocations();
-            };
-            L.DomEvent.disableClickPropagation(container);
-            return container;
-        }
-    });
-
-    var AccuracyControl = L.Control.extend({
-        onAdd: function() {
-            var container = L.DomUtil.create('input');
-            container.type = 'number';
-            container.min = 0;
-            container.step = 5;
-            container.value = currentAccMax;
-            container.placeholder = 'acc m';
-            container.title = 'Max accuracy radius (m). Empty = no filter.';
-            container.onchange = function() {
-                var v = parseInt(container.value, 10);
-                currentAccMax = (isNaN(v) || v <= 0) ? 0 : v;
-                fetchLocations();
-            };
-            L.DomEvent.disableClickPropagation(container);
-            return container;
-        }
-    });
-
-    (new SpeedControl()).addTo(map);
-    (new AccuracyControl()).addTo(map);
     CartoDB_Positron.addTo(map);
 
     // Dedicated pane (and renderer) for the location dot so it always
@@ -305,7 +308,6 @@
         layerGroup.eachLayer(function(layer) {
             layer.setStyle({ color: hex });
         });
-        document.querySelector('#color-btn .swatch').style.background = hex;
         document.getElementById('nativeColor').value = hex;
         try { localStorage.setItem(LINE_COLOR_KEY, hex); } catch (e) {}
     }
@@ -463,7 +465,9 @@
     function startLocating(recenterMaxZoom) {
         locating = true;
         pendingRecenter = recenterMaxZoom;
-        locateBtn.textContent = 'Stop locating';
+        locateBtn.classList.add('active');
+        locateBtn.setAttribute('aria-label', 'Stop locating');
+        locateBtn.setAttribute('title', 'Stop locating');
         loadingEl.textContent = 'Locating...';
         loadingEl.style.display = 'block';
         map.locate({ watch: true, enableHighAccuracy: true, timeout: 10000 });
@@ -472,7 +476,9 @@
     function stopLocating() {
         locating = false;
         pendingRecenter = null;
-        locateBtn.textContent = 'Locate me';
+        locateBtn.classList.remove('active');
+        locateBtn.setAttribute('aria-label', 'Locate me');
+        locateBtn.setAttribute('title', 'Locate me');
         map.stopLocate();
         if (currentLocationMarker) {
             map.removeLayer(currentLocationMarker);
@@ -543,29 +549,47 @@
         }
     });
 
-    var colorBtn = document.getElementById('color-btn');
-    var colorPanel = document.getElementById('color-panel');
+    var menuBtn = document.getElementById('menu-btn');
+    var menuPanel = document.getElementById('menu-panel');
 
-    function positionColorPanel() {
-        var rect = colorBtn.getBoundingClientRect();
-        colorPanel.style.left = rect.left + 'px';
-        colorPanel.style.top = (rect.bottom + 4) + 'px';
+    function positionMenuPanel() {
+        var rect = menuBtn.getBoundingClientRect();
+        // Right-align under the button so the panel never overflows the right edge.
+        menuPanel.style.right = (window.innerWidth - rect.right) + 'px';
+        menuPanel.style.top   = (rect.bottom + 4) + 'px';
+        menuPanel.style.left  = 'auto';
     }
 
-    colorBtn.addEventListener('click', function(e) {
+    function openMenuPanel() {
+        positionMenuPanel();
+        menuPanel.hidden = false;
+        menuBtn.setAttribute('aria-expanded', 'true');
+        loadYearsOnce();
+    }
+
+    function closeMenuPanel() {
+        menuPanel.hidden = true;
+        menuBtn.setAttribute('aria-expanded', 'false');
+    }
+
+    menuBtn.addEventListener('click', function(e) {
         e.stopPropagation();
-        datePanel.hidden = true;
-        if (colorPanel.hidden) {
-            positionColorPanel();
-            colorPanel.hidden = false;
+        if (menuPanel.hidden) {
+            openMenuPanel();
         } else {
-            colorPanel.hidden = true;
+            closeMenuPanel();
         }
     });
-    colorPanel.addEventListener('click', function(e) { e.stopPropagation(); });
+    menuPanel.addEventListener('click', function(e) { e.stopPropagation(); });
+
     document.addEventListener('click', function() {
-        if (!colorPanel.hidden) colorPanel.hidden = true;
-        if (!datePanel.hidden) datePanel.hidden = true;
+        if (!menuPanel.hidden) closeMenuPanel();
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && !menuPanel.hidden) {
+            closeMenuPanel();
+        }
     });
 
     document.getElementById('nativeColor').addEventListener('input', function(e) {
@@ -575,29 +599,8 @@
         applyLineColor(DEFAULT_LINE_COLOR);
     });
 
-    var datesBtn  = document.getElementById('dates-btn');
-    var datePanel = document.getElementById('date-panel');
     var dateFromEl = document.getElementById('date-from');
     var dateToEl   = document.getElementById('date-to');
-
-    function positionDatePanel() {
-        var rect = datesBtn.getBoundingClientRect();
-        datePanel.style.left = rect.left + 'px';
-        datePanel.style.top  = (rect.bottom + 4) + 'px';
-    }
-
-    datesBtn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        colorPanel.hidden = true;
-        if (datePanel.hidden) {
-            positionDatePanel();
-            datePanel.hidden = false;
-            loadYearsOnce();
-        } else {
-            datePanel.hidden = true;
-        }
-    });
-    datePanel.addEventListener('click', function(e) { e.stopPropagation(); });
 
     dateFromEl.addEventListener('change', function() {
         setRange(dateFromEl.value, dateToEl.value);
@@ -610,7 +613,7 @@
         setRange(null, null);
     });
 
-    document.querySelectorAll('#date-panel .preset-row button').forEach(function(btn) {
+    document.querySelectorAll('#menu-panel .preset-row button').forEach(function(btn) {
         btn.addEventListener('click', function() {
             var range = presetRange(btn.getAttribute('data-preset'));
             setRange(range[0], range[1]);
@@ -625,6 +628,17 @@
         }
         setRange(y + '-01-01', y + '-12-31');
         e.target.value = ''; // reset to placeholder; inputs are the source of truth
+    });
+
+    document.getElementById('speed-input').addEventListener('change', function(e) {
+        currentSpeed = parseFloat(e.target.value) || 8.5;
+        fetchLocations();
+    });
+
+    document.getElementById('accuracy-input').addEventListener('change', function(e) {
+        var v = parseInt(e.target.value, 10);
+        currentAccMax = (isNaN(v) || v <= 0) ? 0 : v;
+        fetchLocations();
     });
 
     applyLineColor(currentLineColor);

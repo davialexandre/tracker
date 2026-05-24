@@ -11,6 +11,8 @@ $maxSpeed = (float)($_GET['speed'] ?? 8.5);
 $limit = (int)($_GET['limit'] ?? 100000);
 $cursor = isset($_GET['cursor']) ? (int)$_GET['cursor'] : PHP_INT_MAX;
 $maxAcc = isset($_GET['acc_max']) ? (int)$_GET['acc_max'] : 0;
+$from = isset($_GET['from']) ? (int)$_GET['from'] : 0;
+$to   = isset($_GET['to'])   ? (int)$_GET['to']   : 0;
 
 $hasBounds = isset($_GET['south'], $_GET['north'], $_GET['west'], $_GET['east']);
 
@@ -22,6 +24,16 @@ $accClause = '';
 if ($maxAcc > 0) {
     $accClause = 'AND (acc = 0 OR acc <= :maxAcc)';
     $params[':maxAcc'] = $maxAcc;
+}
+
+$dateClause = '';
+if ($from > 0) {
+    $dateClause .= ' AND tst >= :from';
+    $params[':from'] = $from;
+}
+if ($to > 0) {
+    $dateClause .= ' AND tst < :to';
+    $params[':to'] = $to;
 }
 
 if ($hasBounds) {
@@ -47,6 +59,7 @@ $sql = "SELECT lat, lon, tst FROM location
         AND tst < :cursor
         $accClause
         $boundsClause
+        $dateClause
         ORDER BY tst DESC
         LIMIT :limit";
 

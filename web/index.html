@@ -169,6 +169,13 @@
             font-family: inherit;
         }
         #date-panel #date-clear-btn:hover { background: #f5f5f5; }
+        #date-panel #year-select {
+            font: inherit;
+            padding: 4px 6px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            background: white;
+        }
     </style>
 </head>
 <body>
@@ -197,6 +204,9 @@
         <button type="button" data-preset="this-year">This year</button>
         <button type="button" data-preset="last-year">Last year</button>
     </div>
+    <select id="year-select" hidden>
+        <option value="">Year…</option>
+    </select>
     <div class="date-row">
         <label for="date-from">From</label>
         <input id="date-from" type="date">
@@ -222,6 +232,7 @@
     var currentAccMax = 15; // meters; 0 = no accuracy filter
     var currentFrom = null; // 'YYYY-MM-DD' or null
     var currentTo = null;   // 'YYYY-MM-DD' or null
+    var yearsCache = null; // { min, max } once fetched, or null
     var layerGroup = L.layerGroup().addTo(map);
     var abortController = null;
     var moveTimeout = null;
@@ -351,6 +362,35 @@
                 return [(y - 1) + '-01-01', (y - 1) + '-12-31'];
         }
         return [null, null];
+    }
+
+    function loadYearsOnce() {
+        if (yearsCache !== null) return;
+        fetch('/years.php')
+            .then(function(r) { return r.json(); })
+            .then(function(json) {
+                yearsCache = json || { min: null, max: null };
+                populateYearSelect();
+            })
+            .catch(function(e) {
+                console.error('years.php failed', e);
+                yearsCache = { min: null, max: null };
+            });
+    }
+
+    function populateYearSelect() {
+        var sel = document.getElementById('year-select');
+        if (!yearsCache || yearsCache.min == null || yearsCache.max == null) {
+            sel.hidden = true;
+            return;
+        }
+        // Build options descending: most recent year first.
+        var opts = ['<option value="">Year…</option>'];
+        for (var y = yearsCache.max; y >= yearsCache.min; y--) {
+            opts.push('<option value="' + y + '">' + y + '</option>');
+        }
+        sel.innerHTML = opts.join('');
+        sel.hidden = false;
     }
 
     // Full reset: clear all data and reload for the current viewport.
@@ -552,6 +592,7 @@
         if (datePanel.hidden) {
             positionDatePanel();
             datePanel.hidden = false;
+            loadYearsOnce();
         } else {
             datePanel.hidden = true;
         }
@@ -574,6 +615,16 @@
             var range = presetRange(btn.getAttribute('data-preset'));
             setRange(range[0], range[1]);
         });
+    });
+
+    document.getElementById('year-select').addEventListener('change', function(e) {
+        var y = e.target.value;
+        if (!y) {
+            setRange(null, null);
+            return;
+        }
+        setRange(y + '-01-01', y + '-12-31');
+        e.target.value = ''; // reset to placeholder; inputs are the source of truth
     });
 
     applyLineColor(currentLineColor);

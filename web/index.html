@@ -452,6 +452,7 @@
 
     colorBtn.addEventListener('click', function(e) {
         e.stopPropagation();
+        datePanel.hidden = true;
         if (colorPanel.hidden) {
             positionColorPanel();
             colorPanel.hidden = false;
@@ -485,6 +486,7 @@
 
     datesBtn.addEventListener('click', function(e) {
         e.stopPropagation();
+        colorPanel.hidden = true;
         if (datePanel.hidden) {
             positionDatePanel();
             datePanel.hidden = false;

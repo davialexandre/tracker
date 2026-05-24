@@ -141,6 +141,22 @@
             border: 1px solid #ccc;
             border-radius: 3px;
         }
+        #date-panel .preset-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+        #date-panel .preset-row button {
+            background: white;
+            border: 1px solid #ddd;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #006cff;
+            font-family: inherit;
+        }
+        #date-panel .preset-row button:hover { background: #f5f5f5; }
         #date-panel #date-clear-btn {
             background: white;
             border: 1px solid #ddd;
@@ -174,6 +190,13 @@
     <button id="reset-color-btn" type="button">Reset to default</button>
 </div>
 <div id="date-panel" hidden>
+    <div class="preset-row">
+        <button type="button" data-preset="today">Today</button>
+        <button type="button" data-preset="this-week">This week</button>
+        <button type="button" data-preset="this-month">This month</button>
+        <button type="button" data-preset="this-year">This year</button>
+        <button type="button" data-preset="last-year">Last year</button>
+    </div>
     <div class="date-row">
         <label for="date-from">From</label>
         <input id="date-from" type="date">
@@ -289,6 +312,45 @@
         document.getElementById('date-from').value = currentFrom || '';
         document.getElementById('date-to').value   = currentTo   || '';
         fetchLocations();
+    }
+
+    function pad2(n) { return (n < 10 ? '0' : '') + n; }
+    function fmtDate(d) {
+        return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+    }
+
+    // Returns the Monday of the ISO week containing `d`, as a fresh Date at local 00:00.
+    function isoWeekMonday(d) {
+        var m = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        // JS getDay(): Sun=0, Mon=1, ..., Sat=6. ISO week starts Monday.
+        var dow = m.getDay();
+        var diff = (dow === 0) ? -6 : (1 - dow); // shift to Monday
+        m.setDate(m.getDate() + diff);
+        return m;
+    }
+
+    function presetRange(name) {
+        var today = new Date();
+        var y = today.getFullYear(), mo = today.getMonth();
+        switch (name) {
+            case 'today':
+                return [fmtDate(today), fmtDate(today)];
+            case 'this-week': {
+                var mon = isoWeekMonday(today);
+                var sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+                return [fmtDate(mon), fmtDate(sun)];
+            }
+            case 'this-month': {
+                var first = new Date(y, mo, 1);
+                var last  = new Date(y, mo + 1, 0); // day 0 of next month = last day of this month
+                return [fmtDate(first), fmtDate(last)];
+            }
+            case 'this-year':
+                return [y + '-01-01', y + '-12-31'];
+            case 'last-year':
+                return [(y - 1) + '-01-01', (y - 1) + '-12-31'];
+        }
+        return [null, null];
     }
 
     // Full reset: clear all data and reload for the current viewport.
@@ -505,6 +567,13 @@
 
     document.getElementById('date-clear-btn').addEventListener('click', function() {
         setRange(null, null);
+    });
+
+    document.querySelectorAll('#date-panel .preset-row button').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var range = presetRange(btn.getAttribute('data-preset'));
+            setRange(range[0], range[1]);
+        });
     });
 
     applyLineColor(currentLineColor);

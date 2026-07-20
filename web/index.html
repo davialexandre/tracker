@@ -826,7 +826,7 @@
         planLayer.addTo(map);
         planPanel.hidden = false;
         renderPlan();
-        // Task 7 adds: refreshRouteList();
+        refreshRouteList();
     }
 
     function exitPlanMode() {
@@ -848,6 +848,149 @@
     document.getElementById('plan-clear').addEventListener('click', function () {
         if (planPoints.length && !confirm('Clear the current route?')) return;
         clearPlan();
+    });
+
+    // ---- Route planning: persistence & export ------------------------------
+    function saveRoute() {
+        if (planPoints.length < 2) return;
+        var body = { geojson: { type: 'LineString', coordinates: planCoordsLonLat() } };
+        var url, method;
+        if (currentRouteId === null) {
+            var name = prompt('Name this route:');
+            if (name === null) return;
+            if (name.trim() === '') { alert('Please enter a name.'); return; }
+            body.name = name.trim();
+            url = '/routes.php';
+            method = 'POST';
+        } else {
+            url = '/routes.php?id=' + currentRouteId;
+            method = 'PATCH';
+        }
+        fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        })
+            .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+            .then(function (res) {
+                if (!res.ok) { alert('Save failed: ' + (res.j.error || 'unknown error')); return; }
+                if (res.j.id) currentRouteId = res.j.id;
+                refreshRouteList();
+                renderPlan();
+            })
+            .catch(function (e) { alert('Save failed: ' + e.message); });
+    }
+
+    function refreshRouteList() {
+        fetch('/routes.php')
+            .then(function (r) { return r.json(); })
+            .then(function (routes) {
+                routeListEl.innerHTML = '';
+                if (!Array.isArray(routes) || routes.length === 0) {
+                    var empty = document.createElement('li');
+                    empty.className = 'route-meta';
+                    empty.textContent = 'No saved routes yet.';
+                    routeListEl.appendChild(empty);
+                    return;
+                }
+                routes.forEach(function (route) { routeListEl.appendChild(buildRouteListItem(route)); });
+            })
+            .catch(function (e) { console.error('route list failed', e); });
+    }
+
+    function buildRouteListItem(route) {
+        var li = document.createElement('li');
+
+        var info = document.createElement('div');
+        info.className = 'route-info';
+        var nameEl = document.createElement('span');
+        nameEl.className = 'route-name';
+        nameEl.textContent = route.name;
+        var metaEl = document.createElement('span');
+        metaEl.className = 'route-meta';
+        metaEl.textContent = (route.distance_m / 1000).toFixed(2) + ' km · ' +
+            new Date(route.created_at * 1000).toLocaleDateString();
+        info.appendChild(nameEl);
+        info.appendChild(metaEl);
+
+        var actions = document.createElement('div');
+        actions.className = 'route-actions';
+
+        var openBtn = document.createElement('button');
+        openBtn.type = 'button';
+        openBtn.textContent = 'Open';
+        openBtn.addEventListener('click', function () { openRoute(route.id); });
+
+        var renameBtn = document.createElement('button');
+        renameBtn.type = 'button';
+        renameBtn.textContent = 'Rename';
+        renameBtn.addEventListener('click', function () { renameRoute(route.id, route.name); });
+
+        var exportLink = document.createElement('a');
+        exportLink.href = '/route_gpx.php?id=' + route.id;
+        exportLink.textContent = 'GPX';
+
+        var deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.addEventListener('click', function () { deleteRoute(route.id); });
+
+        actions.appendChild(openBtn);
+        actions.appendChild(renameBtn);
+        actions.appendChild(exportLink);
+        actions.appendChild(deleteBtn);
+
+        li.appendChild(info);
+        li.appendChild(actions);
+        return li;
+    }
+
+    function openRoute(id) {
+        fetch('/routes.php?id=' + id)
+            .then(function (r) { return r.json(); })
+            .then(function (route) {
+                if (!route || !route.geojson || !route.geojson.coordinates) { alert('Could not load route.'); return; }
+                planPoints = route.geojson.coordinates.map(function (c) { return L.latLng(c[1], c[0]); });
+                currentRouteId = route.id;
+                if (!planMode) enterPlanMode();
+                renderPlan();
+                if (planPoints.length > 0) map.fitBounds(L.latLngBounds(planPoints).pad(0.2));
+            })
+            .catch(function (e) { alert('Could not load route: ' + e.message); });
+    }
+
+    function renameRoute(id, currentName) {
+        var name = prompt('New name:', currentName);
+        if (name === null) return;
+        if (name.trim() === '') { alert('Please enter a name.'); return; }
+        fetch('/routes.php?id=' + id, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: name.trim() })
+        })
+            .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+            .then(function (res) {
+                if (!res.ok) { alert('Rename failed: ' + (res.j.error || 'unknown error')); return; }
+                refreshRouteList();
+            })
+            .catch(function (e) { alert('Rename failed: ' + e.message); });
+    }
+
+    function deleteRoute(id) {
+        if (!confirm('Delete this route?')) return;
+        fetch('/routes.php?id=' + id, { method: 'DELETE' })
+            .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+            .then(function (res) {
+                if (!res.ok) { alert('Delete failed: ' + (res.j.error || 'unknown error')); return; }
+                if (currentRouteId === id) clearPlan();
+                refreshRouteList();
+            })
+            .catch(function (e) { alert('Delete failed: ' + e.message); });
+    }
+
+    planSaveBtn.addEventListener('click', saveRoute);
+    planExportBtn.addEventListener('click', function () {
+        if (currentRouteId !== null) window.location = '/route_gpx.php?id=' + currentRouteId;
     });
 
     applyLineColor(currentLineColor);

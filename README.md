@@ -41,11 +41,14 @@ mapa. No menu (ícone ⋮), clique em "Plan a route": toque no mapa para adicion
 pontos, arraste um ponto para movê-lo e toque nele para removê-lo. A distância é
 calculada em tempo real.
 
-As rotas podem ser salvas (com nome), reabertas, renomeadas e excluídas. Para
-levar uma rota para o Strava ou o Garmin Connect, use "Export GPX" (ou o link
-"GPX" na lista de rotas salvas) para baixar um arquivo `.gpx` e importá-lo no
-construtor de rotas do Strava ("Upload GPX") ou na importação de percursos do
-Garmin Connect.
+As rotas podem ser salvas (com nome), reabertas, renomeadas e excluídas. Use
+"Export GPX" (ou o link "GPX" na lista de rotas salvas) para baixar um arquivo
+`.gpx` e importá-lo em um app de planejamento:
+
+- **Garmin Connect** (grátis): importe em "Training > Courses" (web ou app).
+- **Strava**: importar um GPX como *rota* exige assinatura paga
+  (`strava.com/routes/new`). Contas gratuitas só conseguem enviar GPX como
+  *atividade* (registro de treino), não como rota.
 
 > Ao adicionar a funcionalidade a uma instalação já existente, rode
 > `docker compose run --rm php php /var/www/scripts/create_db.php` uma vez para criar a

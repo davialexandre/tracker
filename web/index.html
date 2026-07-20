@@ -188,6 +188,68 @@
             font-family: inherit;
             font-size: 13px;
         }
+        #plan-panel {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background: white;
+            padding: 12px;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+            z-index: 1000;
+            font-family: sans-serif;
+            font-size: 13px;
+            width: min(320px, calc(100vw - 20px));
+            box-sizing: border-box;
+            max-height: calc(100vh - 20px);
+            overflow-y: auto;
+        }
+        #plan-panel[hidden] { display: none; }
+        .plan-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+        .plan-title { font-weight: bold; color: #333; }
+        .plan-close {
+            background: white; border: none; cursor: pointer;
+            font-size: 15px; color: #333; padding: 2px 6px; border-radius: 4px;
+        }
+        .plan-close:hover { background: #f5f5f5; }
+        .plan-hint { color: #888; font-size: 12px; margin-bottom: 8px; }
+        .plan-distance-row {
+            display: flex; align-items: center; justify-content: space-between;
+            color: #333; margin-bottom: 8px;
+        }
+        .plan-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+        .plan-actions button {
+            background: white; border: 1px solid #ddd; padding: 6px 10px;
+            border-radius: 4px; cursor: pointer; font-size: 12px; color: #006cff;
+            font-family: inherit;
+        }
+        .plan-actions button:hover:not(:disabled) { background: #f5f5f5; }
+        .plan-actions button:disabled { color: #bbb; cursor: default; border-color: #eee; }
+        #plan-panel hr { border: none; border-top: 1px solid #eee; margin: 10px 0; }
+        .route-list { list-style: none; margin: 6px 0 0; padding: 0; }
+        .route-list li {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 6px; padding: 6px 0; border-bottom: 1px solid #f0f0f0;
+        }
+        .route-info { display: flex; flex-direction: column; min-width: 0; }
+        .route-name { color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .route-meta { color: #999; font-size: 11px; }
+        .route-actions { display: flex; gap: 4px; flex-shrink: 0; }
+        .route-actions button, .route-actions a {
+            background: white; border: 1px solid #ddd; padding: 3px 6px; border-radius: 4px;
+            cursor: pointer; font-size: 11px; color: #006cff; text-decoration: none; font-family: inherit;
+        }
+        .route-actions button:hover, .route-actions a:hover { background: #f5f5f5; }
+        .leaflet-div-icon.plan-marker {
+            background: #ff6d00; color: white; border: 2px solid white;
+            border-radius: 50%; text-align: center; line-height: 18px;
+            font: 11px sans-serif; box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+        }
     </style>
 </head>
 <body>
@@ -256,7 +318,29 @@
         <button id="reset-color-btn" type="button">Reset to default</button>
     </div>
     <hr>
+    <a id="plan-link" href="#" class="menu-link">Plan a route <span aria-hidden="true">›</span></a>
+    <hr>
     <a id="import-link" href="/import.html" class="menu-link">Import GPX <span aria-hidden="true">›</span></a>
+</div>
+<div id="plan-panel" hidden>
+    <div class="plan-header">
+        <span class="plan-title">Route planner</span>
+        <button id="plan-done" type="button" class="plan-close" title="Done" aria-label="Done planning">✕</button>
+    </div>
+    <div class="plan-hint">Tap the map to add points. Drag a point to move it, tap a point to remove it.</div>
+    <div class="plan-distance-row">
+        <span>Distance</span>
+        <strong id="plan-distance">0.00 km</strong>
+    </div>
+    <div class="plan-actions">
+        <button id="plan-undo" type="button">Undo</button>
+        <button id="plan-clear" type="button">Clear</button>
+        <button id="plan-save" type="button" disabled>Save</button>
+        <button id="plan-export" type="button" disabled>Export GPX</button>
+    </div>
+    <hr>
+    <div class="section-label" style="text-transform:uppercase;font-size:11px;color:#888;letter-spacing:0.5px;">Saved routes</div>
+    <ul id="route-list" class="route-list"></ul>
 </div>
 <div id="loading">Loading...</div>
 <script type="application/javascript">
@@ -641,6 +725,129 @@
         var v = parseInt(e.target.value, 10);
         currentAccMax = (isNaN(v) || v <= 0) ? 0 : v;
         fetchLocations();
+    });
+
+    // ---- Route planning: draw & edit ---------------------------------------
+    var PLAN_COLOR = '#ff6d00';
+    var planMode = false;
+    var planPoints = [];        // array of L.LatLng in draw order
+    var planLayer = L.layerGroup();
+    var planPolyline = null;
+    var currentRouteId = null;  // set when editing a saved route
+    var planPanel = document.getElementById('plan-panel');
+    var planDistanceEl = document.getElementById('plan-distance');
+    var planSaveBtn = document.getElementById('plan-save');
+    var planExportBtn = document.getElementById('plan-export');
+    var routeListEl = document.getElementById('route-list');
+
+    function haversineMeters(lat1, lon1, lat2, lon2) {
+        var R = 6371000, toRad = Math.PI / 180;
+        var dPhi = (lat2 - lat1) * toRad;
+        var dLam = (lon2 - lon1) * toRad;
+        var a = Math.sin(dPhi / 2) * Math.sin(dPhi / 2) +
+                Math.cos(lat1 * toRad) * Math.cos(lat2 * toRad) *
+                Math.sin(dLam / 2) * Math.sin(dLam / 2);
+        return 2 * R * Math.asin(Math.min(1, Math.sqrt(a)));
+    }
+
+    function planDistanceMeters() {
+        var total = 0;
+        for (var i = 1; i < planPoints.length; i++) {
+            total += haversineMeters(
+                planPoints[i - 1].lat, planPoints[i - 1].lng,
+                planPoints[i].lat, planPoints[i].lng
+            );
+        }
+        return total;
+    }
+
+    function planCoordsLonLat() {
+        return planPoints.map(function (p) { return [p.lng, p.lat]; });
+    }
+
+    function planMarkerIcon(n) {
+        return L.divIcon({
+            className: 'plan-marker',
+            html: String(n),
+            iconSize: [22, 22],
+            iconAnchor: [11, 11]
+        });
+    }
+
+    function renderPlan() {
+        planLayer.clearLayers();
+
+        if (planPoints.length >= 2) {
+            planPolyline = L.polyline(planPoints, { color: PLAN_COLOR, weight: 4 });
+            planLayer.addLayer(planPolyline);
+        } else {
+            planPolyline = null;
+        }
+
+        planPoints.forEach(function (latlng, index) {
+            var marker = L.marker(latlng, {
+                icon: planMarkerIcon(index + 1),
+                draggable: true,
+                keyboard: false
+            });
+            marker.on('dragend', function () { movePlanPoint(index, marker.getLatLng()); });
+            marker.on('click', function (e) { L.DomEvent.stopPropagation(e); removePlanPoint(index); });
+            planLayer.addLayer(marker);
+        });
+
+        planDistanceEl.textContent = (planDistanceMeters() / 1000).toFixed(2) + ' km';
+
+        var hasRoute = planPoints.length >= 2;
+        planSaveBtn.disabled = !hasRoute;
+        planExportBtn.disabled = !(hasRoute && currentRouteId !== null);
+    }
+
+    function addPlanPoint(latlng) { planPoints.push(latlng); renderPlan(); }
+
+    function movePlanPoint(index, latlng) {
+        if (index < 0 || index >= planPoints.length) return;
+        planPoints[index] = latlng;
+        renderPlan();
+    }
+
+    function removePlanPoint(index) {
+        if (index < 0 || index >= planPoints.length) return;
+        planPoints.splice(index, 1);
+        renderPlan();
+    }
+
+    function undoPlanPoint() { planPoints.pop(); renderPlan(); }
+
+    function clearPlan() { planPoints = []; currentRouteId = null; renderPlan(); }
+
+    function enterPlanMode() {
+        if (planMode) return;
+        planMode = true;
+        planLayer.addTo(map);
+        planPanel.hidden = false;
+        renderPlan();
+        // Task 7 adds: refreshRouteList();
+    }
+
+    function exitPlanMode() {
+        if (!planMode) return;
+        planMode = false;
+        planPanel.hidden = true;
+        map.removeLayer(planLayer);
+    }
+
+    map.on('click', function (e) { if (planMode) addPlanPoint(e.latlng); });
+
+    document.getElementById('plan-link').addEventListener('click', function (e) {
+        e.preventDefault();
+        closeMenuPanel();
+        enterPlanMode();
+    });
+    document.getElementById('plan-done').addEventListener('click', exitPlanMode);
+    document.getElementById('plan-undo').addEventListener('click', undoPlanPoint);
+    document.getElementById('plan-clear').addEventListener('click', function () {
+        if (planPoints.length && !confirm('Clear the current route?')) return;
+        clearPlan();
     });
 
     applyLineColor(currentLineColor);

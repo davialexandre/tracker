@@ -883,9 +883,17 @@
 
     function refreshRouteList() {
         fetch('/routes.php')
-            .then(function (r) { return r.json(); })
-            .then(function (routes) {
+            .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+            .then(function (res) {
                 routeListEl.innerHTML = '';
+                if (!res.ok) {
+                    var err = document.createElement('li');
+                    err.className = 'route-meta';
+                    err.textContent = 'Could not load routes: ' + (res.j.error || 'unknown error');
+                    routeListEl.appendChild(err);
+                    return;
+                }
+                var routes = res.j;
                 if (!Array.isArray(routes) || routes.length === 0) {
                     var empty = document.createElement('li');
                     empty.className = 'route-meta';
@@ -947,8 +955,10 @@
 
     function openRoute(id) {
         fetch('/routes.php?id=' + id)
-            .then(function (r) { return r.json(); })
-            .then(function (route) {
+            .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+            .then(function (res) {
+                if (!res.ok) { alert('Could not load route: ' + (res.j.error || 'unknown error')); return; }
+                var route = res.j;
                 if (!route || !route.geojson || !route.geojson.coordinates) { alert('Could not load route.'); return; }
                 planPoints = route.geojson.coordinates.map(function (c) { return L.latLng(c[1], c[0]); });
                 currentRouteId = route.id;

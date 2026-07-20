@@ -14,7 +14,7 @@ docker compose up -d
 Além disso, ao rodar a aplicação pela primeira vez, é necessário criar o banco de dados. Para isso, execute o comando abaixo:
 
 ```bash
-docker compose run --rm php php scripts/create_db.php
+docker compose run --rm php php /var/www/scripts/create_db.php
 ```
 
 A aplicação estará disponível em `http://localhost:9899`
@@ -48,5 +48,5 @@ construtor de rotas do Strava ("Upload GPX") ou na importação de percursos do
 Garmin Connect.
 
 > Ao adicionar a funcionalidade a uma instalação já existente, rode
-> `docker compose run --rm php php scripts/create_db.php` uma vez para criar a
+> `docker compose run --rm php php /var/www/scripts/create_db.php` uma vez para criar a
 > tabela `route` (o comando é idempotente e não altera os dados de localização).

@@ -20,3 +20,17 @@ create table if not exists location
 SQL);
 
 $pdo->exec('CREATE INDEX IF NOT EXISTS idx_location_tst ON location(tst);');
+
+$pdo->exec(<<<SQL
+create table if not exists route
+(
+    id         integer not null
+        constraint route_id
+            primary key autoincrement,
+    name       TEXT    not null,
+    geojson    TEXT    not null,
+    distance_m REAL    not null,
+    created_at integer not null,
+    updated_at integer not null
+);
+SQL);

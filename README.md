@@ -14,7 +14,7 @@ docker compose up -d
 Além disso, ao rodar a aplicação pela primeira vez, é necessário criar o banco de dados. Para isso, execute o comando abaixo:
 
 ```bash
-docker compose run --rm php php scripts/create_db.php
+docker compose run --rm php php /var/www/scripts/create_db.php
 ```
 
 A aplicação estará disponível em `http://localhost:9899`
@@ -33,3 +33,23 @@ Para configurar o Owntracks para enviar os dados para a aplicação, siga os pas
 Pronto! A partir desse momento, o Owntracks enviará os dados de localização para a aplicação.
 
 É importante lembrar que o Owntracks possuí diversos modos de rastreamento e isso impacta a quantidade e frequência de dados enviados. Normalmente, sempre que saio de caso, coloco o app no modo "Move" para conseguir um melhor traçado no mapa.
+
+## Planejando rotas
+
+Além de exibir o histórico, a aplicação permite planejar rotas diretamente no
+mapa. No menu (ícone ⋮), clique em "Plan a route": toque no mapa para adicionar
+pontos, arraste um ponto para movê-lo e toque nele para removê-lo. A distância é
+calculada em tempo real.
+
+As rotas podem ser salvas (com nome), reabertas, renomeadas e excluídas. Use
+"Export GPX" (ou o link "GPX" na lista de rotas salvas) para baixar um arquivo
+`.gpx` e importá-lo em um app de planejamento:
+
+- **Garmin Connect** (grátis): importe em "Training > Courses" (web ou app).
+- **Strava**: importar um GPX como *rota* exige assinatura paga
+  (`strava.com/routes/new`). Contas gratuitas só conseguem enviar GPX como
+  *atividade* (registro de treino), não como rota.
+
+> Ao adicionar a funcionalidade a uma instalação já existente, rode
+> `docker compose run --rm php php /var/www/scripts/create_db.php` uma vez para criar a
+> tabela `route` (o comando é idempotente e não altera os dados de localização).

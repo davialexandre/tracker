@@ -139,3 +139,40 @@ function import_one(PDO $pdo, string $path): array {
         'skipped'  => $parsed['skipped'],
     ];
 }
+
+/**
+ * Total length in metres over a list of [lon, lat] positions.
+ * Returns 0.0 for fewer than 2 points.
+ */
+function polyline_distance_m(array $coords): float {
+    $total = 0.0;
+    $n = count($coords);
+    for ($i = 1; $i < $n; $i++) {
+        $total += haversine(
+            (float) $coords[$i - 1][1], (float) $coords[$i - 1][0],
+            (float) $coords[$i][1],     (float) $coords[$i][0]
+        );
+    }
+    return $total;
+}
+
+/**
+ * Build a GPX 1.1 track from a list of [lon, lat] positions.
+ * No timestamps, no elevation — this is a plan, not a recording.
+ */
+function build_route_gpx(string $name, array $coords): string {
+    $safeName = htmlspecialchars($name, ENT_XML1 | ENT_QUOTES, 'UTF-8');
+    $lines = [];
+    $lines[] = '<?xml version="1.0" encoding="UTF-8"?>';
+    $lines[] = '<gpx version="1.1" creator="tracker" xmlns="http://www.topografix.com/GPX/1/1">';
+    $lines[] = '  <trk>';
+    $lines[] = '    <name>' . $safeName . '</name>';
+    $lines[] = '    <trkseg>';
+    foreach ($coords as $c) {
+        $lines[] = sprintf('      <trkpt lat="%.6f" lon="%.6f"></trkpt>', (float) $c[1], (float) $c[0]);
+    }
+    $lines[] = '    </trkseg>';
+    $lines[] = '  </trk>';
+    $lines[] = '</gpx>';
+    return implode("\n", $lines) . "\n";
+}
